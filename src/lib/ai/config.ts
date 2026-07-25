@@ -3,7 +3,7 @@ import { decrypt } from '@/lib/whatsapp/encryption'
 import type { AiConfig } from './types'
 
 interface AiConfigRow {
-  provider: 'openai' | 'anthropic'
+  provider: 'openai' | 'anthropic' | 'deepseek'
   model: string
   api_key: string
   system_prompt: string | null
@@ -41,16 +41,25 @@ export async function loadAiConfig(
     .maybeSingle()
 
   if (error) throw error
-  if (!data) return null
+  if (!data || !data.api_key) {
+    if (process.env.DEEPSEEK_API_KEY) {
+      return {
+        provider: 'deepseek',
+        model: 'deepseek-chat',
+        apiKey: process.env.DEEPSEEK_API_KEY,
+        systemPrompt: null,
+        isActive: true,
+        autoReplyEnabled: true,
+        autoReplyMaxPerConversation: 3,
+        handoffAgentId: null,
+        embeddingsApiKey: null,
+      }
+    }
+    return null
+  }
 
   const row = data as AiConfigRow
-  // The Playground passes requireActive:false so an admin can test the
-  // agent before flipping the master switch on.
   if (requireActive && !row.is_active) return null
-  // Defensive: the column is NOT NULL, but a partial write / manual DB
-  // edit could leave it empty. Treat a missing key as "not configured"
-  // rather than letting decrypt() throw on null.
-  if (!row.api_key) return null
 
   // The embeddings key is optional and independent of the chat key —
   // a corrupt/undecryptable one should downgrade to lexical KB, not

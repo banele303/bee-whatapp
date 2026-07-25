@@ -8,6 +8,7 @@ import {
 import { HANDOFF_SENTINEL, aiRequestTimeoutMs } from './defaults'
 import { generateOpenAi } from './providers/openai'
 import { generateAnthropic } from './providers/anthropic'
+import { generateDeepSeek } from './providers/deepseek'
 
 export interface GenerateArgs {
   config: AiConfig
@@ -35,6 +36,9 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
 
   let result: { text: string; usage: AiUsage | null }
   switch (config.provider) {
+    case 'deepseek':
+      result = await generateDeepSeek(providerArgs)
+      break
     case 'openai':
       result = await generateOpenAi(providerArgs)
       break
