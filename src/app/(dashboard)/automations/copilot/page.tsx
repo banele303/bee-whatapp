@@ -30,7 +30,6 @@ function FormattedMarkdown({ content }: { content: string }) {
 
   const handleDownloadImage = async (url: string, filename: string) => {
     try {
-      toast.info('Starting image download...');
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -41,9 +40,7 @@ function FormattedMarkdown({ content }: { content: string }) {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      toast.success('Part photo downloaded!');
     } catch {
-      // Fallback: open image in new tab if CORS prevents direct fetch
       window.open(url, '_blank');
     }
   };
