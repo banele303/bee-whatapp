@@ -6,7 +6,7 @@ import toposort from "toposort"
 export function validateGraph({ nodes, edges }: any): string[] {
   const problems: string[] = []
 
-  const triggers = nodes.filter((n) => n.data.kind === "trigger").length
+  const triggers = nodes.filter((n: any) => n?.data?.kind === "trigger").length
   if (triggers !== 1) {
     problems.push(`A workflow needs exactly one Start trigger (found ${triggers}).`)
   }
@@ -17,7 +17,7 @@ export function validateGraph({ nodes, edges }: any): string[] {
   } else {
     try {
       // toposort throws on a cycle — the run would otherwise fail mid-sort.
-      toposort(edges.map((e) => [e.source, e.target]))
+      toposort(edges.map((e: any) => [e.source, e.target]))
     } catch {
       problems.push("Workflow has a cycle — remove the loop before running.")
     }
