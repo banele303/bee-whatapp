@@ -1,15 +1,20 @@
-import { streamText, type CoreMessage } from 'ai';
+import { streamText } from 'ai';
 import { deepseek } from '@ai-sdk/deepseek';
 
 export const maxDuration = 30;
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const rawMessages = body.messages || [];
 
-    // Sanitize messages to standard CoreMessage shape
-    const formattedMessages: CoreMessage[] = rawMessages.map((m: any) => ({
+    // Sanitize messages to standard ChatMessage shape
+    const formattedMessages: ChatMessage[] = rawMessages.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: typeof m.content === 'string' ? m.content : String(m.content || ''),
     }));
