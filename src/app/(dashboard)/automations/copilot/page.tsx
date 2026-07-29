@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from '@/lib/utils'
 import { useChat } from '@ai-sdk/react'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
