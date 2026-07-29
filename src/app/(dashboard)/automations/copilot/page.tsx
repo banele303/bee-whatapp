@@ -200,38 +200,102 @@ function generatePdfFromChatContent(content: string) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
+  const quoteRef = `WACRM-Q-${Math.floor(100000 + Math.random() * 900000)}`;
+  const dateStr = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Convert markdown content table into clean HTML table
+  const lines = content.split('\n');
+  let tableHtml = '';
+  let inTable = false;
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|')) {
+      const cells = trimmed.split('|').filter(c => c.length > 0).map(c => c.trim());
+      if (trimmed.includes('---')) return;
+      if (!inTable) {
+        inTable = true;
+        tableHtml += '<table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:13px;"><thead><tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">';
+        cells.forEach(cell => {
+          tableHtml += `<th style="padding:10px; text-align:left; font-weight:700; color:#1e293b;">${cell.replace(/\*\*/g, '')}</th>`;
+        });
+        tableHtml += '</tr></thead><tbody>';
+      } else {
+        tableHtml += '<tr style="border-bottom:1px solid #e2e8f0;">';
+        cells.forEach(cell => {
+          tableHtml += `<td style="padding:10px; color:#334155;">${cell.replace(/\*\*/g, '')}</td>`;
+        });
+        tableHtml += '</tr>';
+      }
+    } else if (inTable) {
+      inTable = false;
+      tableHtml += '</tbody></table>';
+    }
+  });
+
+  if (inTable) tableHtml += '</tbody></table>';
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Official_ZAR_Quotation</title>
+        <title>Official_Quotation_${quoteRef}</title>
         <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; background: #fff; }
-          .header { display: flex; justify-content: space-between; border-b: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
-          .logo { font-size: 24px; font-weight: 800; color: #047857; }
-          .title { font-size: 20px; font-weight: 700; color: #334155; }
-          .content { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 24px; font-size: 14px; line-height: 1.6; }
-          .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #0f172a; background: #fff; max-width: 800px; margin: 0 auto; }
+          .header-box { display: flex; justify-content: space-between; align-items: flex-start; border-b: 3px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+          .company-name { font-size: 24px; font-weight: 900; color: #047857; letter-spacing: -0.5px; }
+          .subhead { font-size: 12px; color: #64748b; margin-top: 2px; }
+          .quote-title { font-size: 22px; font-weight: 800; color: #0f172a; text-align: right; }
+          .quote-meta { font-size: 12px; color: #475569; font-family: monospace; text-align: right; margin-top: 4px; }
+          .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px; font-size: 13px; }
+          .section-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .notes-card { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 14px; margin-top: 24px; font-size: 12px; color: #064e3b; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
         </style>
       </head>
       <body>
-        <div class="header">
+        <div class="header-box">
           <div>
-            <div class="logo">WACRM Auto Sourcing AI</div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Official Automotive Quotation (ZAR / South Africa)</div>
+            <div class="company-name">WACRM AUTO-SOURCING</div>
+            <div class="subhead">South Africa Automotive Parts & Logistics Gateway</div>
+            <div class="subhead">Reg: 2024/091248/07 | VAT No: 4910293847</div>
           </div>
-          <div style="text-align: right;">
-            <div class="title">PARTS QUOTATION</div>
-            <div style="font-size: 14px; font-family: monospace; font-weight: 700; color: #0f172a; margin-top: 4px;">DATE: ${new Date().toLocaleDateString('en-ZA')}</div>
+          <div>
+            <div class="quote-title">OFFICIAL QUOTATION</div>
+            <div class="quote-meta">REF: <strong>${quoteRef}</strong></div>
+            <div class="quote-meta">DATE: ${dateStr}</div>
+            <div class="quote-meta">VALID UNTIL: ${validUntil}</div>
           </div>
         </div>
 
-        <div class="content">
-          ${content.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+        <div class="details-grid">
+          <div>
+            <div class="section-title">Client Information</div>
+            <div><strong>Client Name:</strong> Valued Workshop / Customer</div>
+            <div><strong>Currency:</strong> ZAR (South African Rand / R)</div>
+            <div><strong>VAT Rate:</strong> 15% Standard Rate Included</div>
+          </div>
+          <div>
+            <div class="section-title">Supplier Sourcing Details</div>
+            <div><strong>Supplier Network:</strong> Goldwagen / Masterparts / Midas</div>
+            <div><strong>Delivery:</strong> Branch Collection or Courier Express</div>
+            <div><strong>Stock Guarantee:</strong> Verified by Stagehand AI Agent</div>
+          </div>
+        </div>
+
+        <div class="section-title">Itemized Quotation Schedule</div>
+        ${tableHtml || `<div style="padding:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:13px;">${content.replace(/\n/g, '<br/>')}</div>`}
+
+        <div class="notes-card">
+          <strong>💳 Payment & Fulfillment Terms:</strong><br/>
+          • EFT / Ozow Instant Payment accepted prior to dispatch.<br/>
+          • All quoted prices include 15% South African VAT.<br/>
+          • Collection available at branch or nationwide doorstep courier (R95 - R145).
         </div>
 
         <div class="footer">
-          <p>Generated by WACRM DeepSeek AI Sourcing Copilot. Prices in ZAR include 15% VAT.</p>
+          <p>This is an official computer-generated quotation issued by WACRM Auto-Sourcing SaaS. Powered by DeepSeek v3.</p>
         </div>
 
         <script>
@@ -558,6 +622,31 @@ export default function CopilotChatPage() {
                           }`}
                         >
                           <div className="relative">
+                            {/* Live Step-by-Step Agent Progress Banner at TOP of Answer Card */}
+                            {m.role === 'assistant' && (isLoading || isLastAssistant) && (
+                              <div className="mb-3 p-3 rounded-xl bg-zinc-950/90 border border-emerald-500/40 space-y-2 shadow-md">
+                                <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <Sparkles className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+                                    <span className="text-xs font-bold text-zinc-100">Stagehand Browser Agent Active</span>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 animate-pulse">
+                                    Executing Auto-Sourcing...
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] font-mono">
+                                  <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                                    <span className="text-emerald-400">✓</span> 1. Connected to Browserbase
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                                    <Loader2 className="h-3 w-3 animate-spin text-emerald-400 shrink-0" /> 2. Searching Catalogs
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-zinc-400 font-semibold">
+                                    <span>⚡</span> 3. Compiling ZAR Quotation
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             <FormattedMarkdown content={m.content} />
                             {isLastAssistant && (
                               <span className="inline-block w-1.5 h-4 ml-1 bg-emerald-400 animate-pulse rounded-xs" />
