@@ -6,10 +6,7 @@ export async function sourceOutOfStockPart(partName: string, make?: string, mode
     env: process.env.BROWSERBASE_API_KEY ? 'BROWSERBASE' : 'LOCAL',
     apiKey: process.env.BROWSERBASE_API_KEY,
     projectId: process.env.BROWSERBASE_PROJECT_ID,
-    model: 'google/gemini-2.5-flash',
-    modelClientOptions: {
-      apiKey: process.env.DEEPSEEK_API_KEY,
-    },
+    modelName: 'google/gemini-2.5-flash',
     verbose: 1,
     disablePino: true,
   })
