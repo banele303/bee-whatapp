@@ -91,12 +91,15 @@ export const runWorkflowTask = task({
         env: "BROWSERBASE",
         apiKey: process.env.BROWSERBASE_API_KEY!,
         projectId: process.env.BROWSERBASE_PROJECT_ID!,
-        modelName: "google/gemini-2.5-flash",
+        modelName: "deepseek-chat",
+        modelClientOptions: {
+          apiKey: process.env.DEEPSEEK_API_KEY,
+        },
         // Pino's logging backend spawns a thread-stream worker (lib/worker.js)
         // that can't be resolved inside trigger.dev's bundled output. Disable it —
         // the option exists for exactly these minimal/bundled environments.
         disablePino: true,
-      })
+      } as any)
       await stagehand.init()
       browserbaseSessionId = stagehand.browserbaseSessionID
       return stagehand
