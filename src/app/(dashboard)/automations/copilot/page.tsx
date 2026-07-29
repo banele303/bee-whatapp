@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useChat } from '@ai-sdk/react'
 import { useRouter } from 'next/navigation'
