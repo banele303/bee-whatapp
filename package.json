@@ -57,7 +57,7 @@
     "@liveblocks/react-flow": "^3.23.0",
     "@liveblocks/react-ui": "^3.23.0",
     "@sentry/nextjs": "^10.68.0",
-    "@supabase/ssr": "^0.12.0",
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.107.0",
     "@trigger.dev/react-hooks": "4.5.8",
     "@trigger.dev/sdk": "4.5.8",
