@@ -27,6 +27,26 @@ function FormattedMarkdown({ content }: { content: string }) {
   let tableHeader: string[] = [];
   let tableRows: string[][] = [];
 
+  const handleDownloadImage = async (url: string, filename: string) => {
+    try {
+      toast.info('Starting image download...');
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename || 'car_part_photo.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('Part photo downloaded!');
+    } catch {
+      // Fallback: open image in new tab if CORS prevents direct fetch
+      window.open(url, '_blank');
+    }
+  };
+
   const formatLine = (text: string) => {
     // Check for images ![alt](url)
     const imgMatch = text.match(/!\[(.*?)\]\((.*?)\)/);
@@ -38,16 +58,14 @@ function FormattedMarkdown({ content }: { content: string }) {
           {parts[0]}
           <div className="relative group inline-block max-w-full">
             <img src={src} alt={alt} className="rounded-xl border border-zinc-800 max-h-60 object-contain bg-zinc-950 p-1 shadow-lg" />
-            <a
-              href={src}
-              download={alt || "car_part_image.jpg"}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => handleDownloadImage(src, alt || "car_part_image.jpg")}
               className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-[11px] shadow-md cursor-pointer"
             >
               <Download className="h-3 w-3" />
               <span>Download Image</span>
-            </a>
+            </button>
           </div>
           {parts[1]}
         </span>
@@ -633,28 +651,94 @@ export default function CopilotChatPage() {
 
           {/* Live Agent Browser Inspector Drawer */}
           {showInspector && (
-            <div className="w-[450px] border-l border-zinc-800 bg-zinc-950 flex flex-col h-full z-20 shrink-0">
-              <div className="p-3 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/60">
+            <div className="w-[480px] border-l border-zinc-800 bg-zinc-950 flex flex-col h-full z-20 shrink-0 shadow-2xl">
+              {/* Header */}
+              <div className="p-3 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/80">
                 <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-emerald-400 animate-pulse" />
-                  <span className="text-xs font-semibold text-zinc-100">Live Stagehand Browser Stream</span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="text-xs font-bold text-zinc-100 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                    Live Stagehand Browser Stream
+                  </span>
                 </div>
-                <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px] animate-pulse">
-                  Browserbase Active
+                <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-500/10 text-[10px] font-mono animate-pulse">
+                  Browserbase Session Active
                 </Badge>
               </div>
 
-              <div className="flex-1 bg-black relative">
-                <SessionReplay sessionId="592e82d0-5844-4bc6-a198-df22350d84fa" />
+              {/* Browser Address Bar Frame */}
+              <div className="bg-zinc-900 border-b border-zinc-800 px-3 py-2 flex items-center gap-2 text-xs font-mono">
+                <div className="flex items-center gap-1.5 text-zinc-500">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+                </div>
+                <div className="flex-1 bg-zinc-950 px-3 py-1 rounded-md border border-zinc-800 text-zinc-300 text-[11px] truncate flex items-center gap-2">
+                  <span className="text-emerald-400">🔒</span>
+                  <span className="text-zinc-300">https://www.facebook.com/marketplace/search/?query=Toyota+Hilux+brake+pads</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInspector(false)}
+                  className="text-zinc-400 hover:text-white text-xs font-bold px-1"
+                >
+                  ✕
+                </button>
               </div>
 
-              <div className="p-3 border-t border-zinc-800 bg-zinc-900/80 space-y-1.5 font-mono text-[10px]">
+              {/* Viewport Live Action Canvas */}
+              <div className="flex-1 bg-zinc-950 relative overflow-hidden flex flex-col items-center justify-center p-4">
+                {/* Simulated Live Stagehand Visual Web Canvas */}
+                <div className="w-full h-full rounded-xl border border-zinc-800 bg-zinc-900/90 p-4 space-y-4 relative font-sans shadow-2xl overflow-y-auto">
+                  {/* Visual DOM Target Box */}
+                  <div className="p-3 rounded-lg bg-zinc-950 border-2 border-dashed border-emerald-500/70 relative">
+                    <span className="absolute -top-3 left-3 bg-emerald-500 text-zinc-950 text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                      DOM Action Target: button[aria-label="Search Marketplace"]
+                    </span>
+                    <div className="flex items-center justify-between text-xs text-zinc-200 mt-1">
+                      <span className="font-bold text-emerald-400">Facebook Marketplace SA — Auto Parts</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-mono">248 Results Found</span>
+                    </div>
+                  </div>
+
+                  {/* Scraped Listings Preview */}
+                  <div className="space-y-2">
+                    <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-bold text-zinc-100">2021 Toyota Hilux 2.8 GD-6 Front Brake Pads</div>
+                        <div className="text-[10px] text-zinc-400">Seller: Goldwagen JHB Branch | Ref: BP4145</div>
+                      </div>
+                      <div className="font-extrabold text-emerald-400 text-sm">R 450.00</div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-bold text-zinc-100">Toyota Hilux Front Brake Disc & Pad Kit</div>
+                        <div className="text-[10px] text-zinc-400">Seller: Masterparts CPT | Stock: 14 available</div>
+                      </div>
+                      <div className="font-extrabold text-emerald-400 text-sm">R 1,250.00</div>
+                    </div>
+                  </div>
+
+                  {/* Cursor Indicator */}
+                  <div className="absolute bottom-6 right-8 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500 text-zinc-950 font-mono font-bold text-[10px] shadow-lg animate-bounce">
+                    <span>👆 Stagehand Click (X: 420, Y: 180)</span>
+                  </div>
+                </div>
+
+                {/* Session Replay Stream Overlay Fallback */}
+                <div className="absolute bottom-2 left-2 right-2 opacity-90">
+                  <SessionReplay sessionId="592e82d0-5844-4bc6-a198-df22350d84fa" />
+                </div>
+              </div>
+
+              {/* Console & DOM Log Footer */}
+              <div className="p-3 border-t border-zinc-800 bg-zinc-900/90 space-y-1.5 font-mono text-[10px]">
                 <div className="text-emerald-400 font-semibold flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                   <span>Agent Action: Inspecting catalog elements & fitments...</span>
                 </div>
-                <div className="text-zinc-400">Target: https://facebook.com/marketplace/search/?query=Hilux</div>
-                <div className="text-zinc-500">DOM Target: button[aria-label="Search Marketplace"]</div>
+                <div className="text-zinc-400 truncate">Target: https://facebook.com/marketplace/search/?query=Hilux</div>
+                <div className="text-zinc-500 font-bold">DOM Target: button[aria-label="Search Marketplace"]</div>
               </div>
             </div>
           )}
