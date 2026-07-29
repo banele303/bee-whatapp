@@ -1,0 +1,10 @@
+{
+    "agents": [
+        {
+            "config": "agent_configs/Switchboard-Concierge.json",
+            "id": "agent_9401kxjrvjepf7nrj2f8j73v1jz1",
+      "version_id": "agtvrsn_2201kxp7pnkdf8rr2hppyys36y4v",
+            "branch_id": "agtbrch_9501kxjrvkdrfh4bq7wt9gf9hcmr"
+        }
+    ]
+}

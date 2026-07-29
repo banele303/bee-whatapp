@@ -1,0 +1,33 @@
+{
+    "name": "get_availability",
+  "description": "Find real bookable appointment times for one published offering on a local calendar date. Each returned team member at each time has a unique slot_id; copy exactly one chosen slot_id into book_appointment or reschedule_appointment. Call this after collecting the web customer's contact number and before offering any times. Never invent availability.",
+    "type": "client",
+    "expects_response": true,
+    "pre_tool_speech": "off",
+    "response_timeout_secs": 30,
+    "parameters": {
+        "type": "object",
+        "description": "The offering, local date, and optional preferred team member.",
+        "properties": {
+            "offering_name": {
+                "type": "string",
+                "description": "Exact published offering name, such as Haircut or Technical support session."
+            },
+            "date": {
+                "type": "string",
+                "description": "Calendar date in the organization's timezone, formatted YYYY-MM-DD."
+            },
+            "team_member_name": {
+                "type": "string",
+                "description": "Optional exact published team member name when the customer has a preference."
+            }
+        },
+        "required": [
+            "offering_name",
+            "date"
+        ]
+    },
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

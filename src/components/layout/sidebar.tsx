@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useTotalUnread } from "@/hooks/use-total-unread";
@@ -10,19 +10,27 @@ import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import {
   Bell,
   Bot,
+  Calendar,
   Crown,
+  FileText,
   GitBranch,
+  GripVertical,
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   Radio,
   Settings,
   Shield,
+  Sparkles,
   User,
   UserCog,
   Users,
   UsersRound,
   Workflow,
+  Wrench,
   X,
   Zap,
 } from "lucide-react";
@@ -89,16 +97,25 @@ interface NavItem {
   beta?: boolean;
 }
 
-const navItems: NavItem[] = [
+const mainNavItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/onboarding", labelKey: "onboarding", icon: Sparkles },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
+  { href: "/catalog", labelKey: "catalog", icon: Wrench },
+  { href: "/appointments", labelKey: "appointments", icon: Calendar },
+  { href: "/quotes", labelKey: "quotes", icon: FileText },
   { href: "/notifications", labelKey: "notifications", icon: Bell },
   { href: "/contacts", labelKey: "contacts", icon: Users },
   { href: "/pipelines", labelKey: "pipelines", icon: GitBranch },
   { href: "/broadcasts", labelKey: "broadcasts", icon: Radio },
-  { href: "/automations", labelKey: "automations", icon: Zap },
-  { href: "/flows", labelKey: "flows", icon: Workflow, beta: true },
+  { href: "/automations", labelKey: "whatsappAutomations", icon: Zap },
   { href: "/agents", labelKey: "aiAgents", icon: Bot },
+  { href: "/flows", labelKey: "flows", icon: Workflow, beta: true },
+];
+
+const aiNavItems: NavItem[] = [
+  { href: "/automations/workflows", labelKey: "sourcingBuilder", icon: GitBranch, beta: true },
+  { href: "/automations/copilot", labelKey: "sourcingCopilot", icon: Sparkles },
 ];
 
 const bottomNavItems = [
@@ -109,24 +126,63 @@ interface SidebarProps {
   /** Controlled on mobile by the Header's hamburger button. Ignored on lg+. */
   open?: boolean;
   onClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  width?: number;
+  onWidthChange?: (newWidth: number) => void;
 }
 
 import { useTranslations } from "next-intl";
 
-export function Sidebar({ open = false, onClose }: SidebarProps) {
+export function Sidebar({
+  open = false,
+  onClose,
+  isCollapsed = false,
+  onToggleCollapse,
+  width = 240,
+  onWidthChange,
+}: SidebarProps) {
   const t = useTranslations("Sidebar");
   const pathname = usePathname();
   const { profile, profileLoading, account, accountRole, signOut } = useAuth();
   const totalUnread = useTotalUnread();
   const unreadNotifications = useUnreadNotifications();
-  // Only surface the account-name strip when it actually carries
-  // information. A solo user's personal account is named after them
-  // (the 017 signup trigger seeds it from `full_name`), so showing it
-  // here would just duplicate the user name in the footer below. Once
-  // the account is renamed or the user joins a shared account, the
-  // name diverges and the strip becomes meaningful — that's the signal
-  // we gate on. Wait for the profile fetch to settle first, otherwise
-  // the strip flashes in once the row resolves (a layout jump).
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback(
+    (e: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = e.clientX;
+        if (newWidth >= 170 && newWidth <= 400) {
+          onWidthChange?.(newWidth);
+        }
+      }
+    },
+    [isResizing, onWidthChange]
+  );
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
+  const currentWidth = isCollapsed ? 64 : width;
+
   const showAccountStrip =
     !profileLoading &&
     !!account?.name &&
@@ -158,11 +214,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Backdrop — only exists on mobile and only when open. Clicking
-          it closes the drawer. Hidden from lg+ since the sidebar is
-          part of the main flex row there. */}
-      <button
-        type="button"
+      <div
+        role="presentation"
         aria-label={t("closeMenu")}
         onClick={onClose}
         className={cn(
@@ -174,41 +227,72 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       />
 
       <aside
+        style={{ width: `${currentWidth}px` }}
         className={cn(
-          // Mobile: fixed drawer that slides in from the left.
-          "fixed inset-y-0 left-0 z-40 flex h-full w-64 flex-col border-r border-border bg-card",
-          "transition-transform duration-200 ease-out will-change-transform",
+          "relative fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-border bg-card transition-all duration-200 ease-out select-none",
           open ? "translate-x-0" : "-translate-x-full",
-          // Desktop: static, always visible — reset all the mobile framing.
-          "lg:static lg:z-0 lg:w-60 lg:translate-x-0 lg:transition-none",
+          "lg:static lg:z-0 lg:translate-x-0"
         )}
         aria-label="Primary"
       >
-        {/* Logo row. On mobile we put a close button here; on desktop the
-            close button is hidden since the sidebar is always-visible. */}
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <MessageSquare className="h-4 w-4" />
+        {/* Drag Handle for Resizing Width */}
+        <div
+          onMouseDown={startResizing}
+          title="Drag to resize sidebar width"
+          className={cn(
+            "absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/50 transition-colors z-50 group hidden lg:block",
+            isResizing && "bg-primary"
+          )}
+        >
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-8 -mr-1 rounded bg-border opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+          </div>
+        </div>
+
+        {/* Logo row with team switcher and Collapse Toggle */}
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
+          <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-800 text-xs font-bold text-zinc-200 border border-zinc-700">
+              BT
             </div>
-            <span className="text-sm font-semibold text-foreground">
-              {t("title")}
-            </span>
+            {!isCollapsed && (
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                <span className="text-xs font-semibold text-foreground truncate">
+                  Blessed's team
+                </span>
+                <span className="rounded border border-zinc-800 bg-zinc-900 px-1 py-0.2 text-[9px] font-bold text-zinc-400">
+                  FREE
+                </span>
+              </div>
+            )}
           </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("closeMenu")}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
-          >
-            <X className="h-5 w-5" />
-          </button>
+
+          <div className="flex items-center gap-1">
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="hidden lg:flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("closeMenu")}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Main navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="flex flex-col gap-1">
-            {navItems.map((item) => {
+            {mainNavItems.map((item) => {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -235,32 +319,36 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{t(item.labelKey as string)}</span>
-                    {item.beta && (
-                      <span
-                        aria-label={t("beta")}
-                        className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-300"
-                      >
-                        {t("beta")}
-                      </span>
-                    )}
-                    {showUnreadDot && (
-                      <span
-                        aria-label={t("unreadConversations", { count: totalUnread })}
-                        className="relative flex h-2 w-2"
-                      >
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                      </span>
-                    )}
-                    {showNotificationBadge && (
-                      <span
-                        aria-label={t("unreadNotifications", { count: unreadNotifications })}
-                        className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
-                      >
-                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                      </span>
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      <>
+                        <span className="flex-1 truncate">{t(item.labelKey as string) === item.labelKey ? item.labelKey : t(item.labelKey as string)}</span>
+                        {item.beta && (
+                          <span
+                            aria-label={t("beta")}
+                            className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-300"
+                          >
+                            {t("beta")}
+                          </span>
+                        )}
+                        {showUnreadDot && (
+                          <span
+                            aria-label={t("unreadConversations", { count: totalUnread })}
+                            className="relative flex h-2 w-2"
+                          >
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                          </span>
+                        )}
+                        {showNotificationBadge && (
+                          <span
+                            aria-label={t("unreadNotifications", { count: unreadNotifications })}
+                            className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
+                          >
+                            {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                          </span>
+                        )}
+                      </>
                     )}
                   </Link>
                 </li>
@@ -268,15 +356,24 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             })}
           </ul>
 
-          <div className="my-4 border-t border-border" />
-
+          {!isCollapsed && (
+            <div className="my-6 px-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                AI Tools & Sourcing
+              </p>
+            </div>
+          )}
           <ul className="flex flex-col gap-1">
-            {bottomNavItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+            {aiNavItems.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    title={isCollapsed ? (item.labelKey as string) : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
                       isActive
@@ -284,13 +381,93 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <item.icon className="h-4 w-4" />
-                    {t(item.labelKey as string)}
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      <>
+                        <span className="flex-1 truncate">{item.labelKey}</span>
+                        {item.beta && (
+                          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-300">
+                            {t("beta")}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </Link>
                 </li>
               );
             })}
           </ul>
+
+          {!isCollapsed && (
+            <>
+              <div className="my-4 border-t border-border" />
+
+              <ul className="flex flex-col gap-1">
+                {bottomNavItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{t(item.labelKey as string)}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Reference Image Widgets: Latest Update & Plan Usage */}
+              <div className="mt-4 space-y-3 px-1">
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Latest update</div>
+                  <div className="mt-1 text-[11px] font-medium text-foreground leading-tight">
+                    LiveFile: upload and share files in collaborative apps
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">Plan usage</span>
+                    <span className="rounded border border-border bg-background px-1 text-[9px] font-bold text-muted-foreground">FREE</span>
+                  </div>
+
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Realtime collab. min.</span>
+                      <span className="font-semibold text-foreground">0/3K</span>
+                    </div>
+                    <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+                      <div className="h-full bg-primary w-0" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-muted-foreground pt-1">
+                      <span>Comments created</span>
+                      <span className="font-semibold text-foreground">0/200</span>
+                    </div>
+                    <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+                      <div className="h-full bg-primary w-0" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-muted-foreground pt-1">
+                      <span>Data storage updates</span>
+                      <span className="font-semibold text-foreground">0/3M</span>
+                    </div>
+                    <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+                      <div className="h-full bg-primary w-0" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </nav>
 
         {/* User section */}

@@ -1,0 +1,29 @@
+{
+    "name": "cancel_appointment",
+    "description": "Cancel an eligible future booking using both its confirmation code and matching contact phone number. Only tell the customer it is canceled when this tool returns success true.",
+    "type": "client",
+    "expects_response": true,
+    "pre_tool_speech": "off",
+    "response_timeout_secs": 30,
+    "parameters": {
+        "type": "object",
+        "description": "The two customer-provided booking credentials.",
+        "properties": {
+            "confirmation_code": {
+                "type": "string",
+                "description": "Booking confirmation code."
+            },
+            "phone": {
+                "type": "string",
+                "description": "Contact phone number stored on the booking."
+            }
+        },
+        "required": [
+            "confirmation_code",
+            "phone"
+        ]
+    },
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

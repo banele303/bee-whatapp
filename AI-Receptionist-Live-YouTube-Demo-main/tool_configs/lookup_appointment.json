@@ -1,0 +1,29 @@
+{
+    "name": "lookup_appointment",
+    "description": "Securely retrieve one existing booking using both its confirmation code and the contact phone number. Do not reveal booking details unless this tool succeeds.",
+    "type": "client",
+    "expects_response": true,
+    "pre_tool_speech": "off",
+    "response_timeout_secs": 30,
+    "parameters": {
+        "type": "object",
+        "description": "The two customer-provided booking credentials.",
+        "properties": {
+            "confirmation_code": {
+                "type": "string",
+                "description": "Booking confirmation code, for example BK-260716-ABCDE."
+            },
+            "phone": {
+                "type": "string",
+                "description": "Contact phone number stored on the booking."
+            }
+        },
+        "required": [
+            "confirmation_code",
+            "phone"
+        ]
+    },
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

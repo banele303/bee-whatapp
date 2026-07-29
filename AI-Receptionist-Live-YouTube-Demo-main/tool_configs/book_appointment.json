@@ -1,0 +1,47 @@
+{
+    "name": "book_appointment",
+  "description": "Create and confirm a real booking after the customer chooses one exact staff-and-time slot returned by get_availability. Copy its slot_id exactly. Only claim success when this tool returns success true, and report the team_member_name returned by this tool.",
+    "type": "client",
+    "expects_response": true,
+    "pre_tool_speech": "off",
+    "response_timeout_secs": 30,
+    "parameters": {
+        "type": "object",
+        "description": "Booking details confirmed by the customer.",
+        "properties": {
+            "offering_name": {
+                "type": "string",
+                "description": "Exact published offering name."
+            },
+      "slot_id": {
+        "type": "string",
+        "description": "Exact slot_id for the customer's chosen team member and time, copied from get_availability. Never invent or alter it."
+            },
+            "customer_name": {
+                "type": "string",
+                "description": "Customer's name."
+            },
+            "phone": {
+                "type": "string",
+                "description": "Contact phone number the web customer provided and confirmed."
+            },
+            "email": {
+                "type": "string",
+                "description": "Optional customer email address."
+            },
+            "notes": {
+                "type": "string",
+                "description": "Optional short notes the customer asked to add."
+            }
+        },
+        "required": [
+      "offering_name",
+      "slot_id",
+      "customer_name",
+            "phone"
+        ]
+    },
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

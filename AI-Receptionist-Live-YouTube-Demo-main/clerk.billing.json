@@ -1,0 +1,89 @@
+{
+  "billing": {
+    "features": {
+      "operations_hub": {
+        "name": "Operations hub",
+        "description": "Manage customers, offerings, team members, availability, and bookings.",
+        "include_in_jwt": true,
+        "publicly_visible": true
+      },
+      "custom_public_page": {
+        "name": "Custom public page",
+        "description": "Publish a branded client-facing page with online booking.",
+        "include_in_jwt": true,
+        "publicly_visible": true
+      },
+      "web_agent": {
+        "name": "Web concierge",
+        "description": "Let visitors talk to an ElevenLabs agent from the public page.",
+        "include_in_jwt": true,
+        "publicly_visible": true
+      },
+      "browser_voice": {
+        "name": "Browser audio",
+        "description": "Let visitors speak to the ElevenLabs concierge using their browser microphone.",
+        "include_in_jwt": true,
+        "publicly_visible": true
+      },
+      "advanced_analytics": {
+        "name": "Advanced analytics",
+        "description": "Conversation outcomes, channel performance, and booking conversion reporting.",
+        "include_in_jwt": true,
+        "publicly_visible": true
+      }
+    },
+    "plans": {
+      "free_org": {
+        "amount": 0,
+        "annual_monthly_amount": 0,
+        "currency": "",
+        "description": "Run the essentials and publish a polished booking page.",
+        "features": [
+          "operations_hub",
+          "custom_public_page"
+        ],
+        "free_trial_enabled": false,
+        "is_recurring": true,
+        "name": "Core",
+        "payer_type": "org",
+        "publicly_visible": true
+      },
+      "engage": {
+        "amount": 4900,
+        "annual_monthly_amount": 3900,
+        "currency": "usd",
+        "description": "Add an ElevenLabs web concierge to every customer touchpoint.",
+        "features": [
+          "operations_hub",
+          "custom_public_page",
+          "web_agent"
+        ],
+        "free_trial_days": 14,
+        "free_trial_enabled": true,
+        "is_recurring": true,
+        "name": "Engage",
+        "payer_type": "org",
+        "publicly_visible": true
+      },
+      "voice": {
+        "amount": 14900,
+        "annual_monthly_amount": 11900,
+        "currency": "usd",
+        "description": "Add live browser audio to the web concierge and measure every outcome.",
+        "features": [
+          "operations_hub",
+          "custom_public_page",
+          "web_agent",
+          "browser_voice",
+          "advanced_analytics"
+        ],
+        "free_trial_days": 14,
+        "free_trial_enabled": true,
+        "is_recurring": true,
+        "name": "Voice",
+        "payer_type": "org",
+        "publicly_visible": true
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "name": "Books the exact selected team member slot",
+  "chat_history": [
+    {
+      "role": "user",
+      "time_in_call_secs": 1,
+      "message": "Please book a Skin Fade with Amara Reed on Monday. My contact number is +15550102020 and my name is Test Customer."
+    },
+    {
+      "role": "agent",
+      "time_in_call_secs": 2,
+      "tool_calls": [
+        {
+          "type": "client",
+          "request_id": "availability-amara",
+          "tool_name": "get_availability",
+          "params_as_json": "{\"offering_name\":\"Skin Fade\",\"date\":\"2026-07-20\",\"team_member_name\":\"Amara Reed\"}",
+          "tool_has_been_called": true
+        }
+      ]
+    },
+    {
+      "role": "agent",
+      "time_in_call_secs": 3,
+      "tool_results": [
+        {
+          "type": "client",
+          "request_id": "availability-amara",
+          "tool_name": "get_availability",
+          "result_value": "{\"success\":true,\"timezone\":\"Asia/Dubai\",\"offering\":{\"name\":\"Skin Fade\"},\"date\":\"2026-07-20\",\"available_time_count\":1,\"selection_instruction\":\"Copy the exact selected slot_id.\",\"times\":[{\"start_time_iso\":\"2026-07-20T09:30:00.000Z\",\"local_time\":\"Monday, July 20, 2026 at 1:30 PM\",\"team_members\":[{\"slot_id\":\"slot_amara_skin_fade_20260720_1330\",\"team_member_name\":\"Amara Reed\"}]}]}",
+          "is_error": false,
+          "tool_has_been_called": true
+        }
+      ]
+    },
+    {
+      "role": "agent",
+      "time_in_call_secs": 4,
+      "message": "Amara Reed is available on Monday at 1:30 PM. Would you like me to book that time?"
+    },
+    {
+      "role": "user",
+      "time_in_call_secs": 5,
+      "message": "Yes, book that exact option with Amara."
+    }
+  ],
+  "dynamic_variables": {
+    "business_name": "PAPAFAM",
+    "business_description": "A modern grooming business.",
+    "business_timezone": "Asia/Dubai",
+    "business_terminology": "service, barber, customer, appointment",
+    "business_offerings": "Skin Fade: precision fade service. Team: Amara Reed, Jay Carter, Marco Silva.",
+    "business_knowledge": "Answer only from the published business information.",
+    "booking_instruction": "Use exact availability slot references and only confirm returned booking details.",
+    "interaction_channel": "web",
+    "contact_number_policy": "Ask for a contact number when the customer starts a contact-dependent request."
+  },
+  "tool_call_parameters": {
+    "referenced_tool": {
+      "id": "tool_7101kxp2vs9rfjatdscjtac5rvrd",
+      "type": "client"
+    },
+    "verify_absence": false,
+    "parameters": [
+      {
+        "path": "offering_name",
+        "eval": {
+          "type": "exact",
+          "expected_value": "Skin Fade"
+        }
+      },
+      {
+        "path": "slot_id",
+        "eval": {
+          "type": "exact",
+          "expected_value": "slot_amara_skin_fade_20260720_1330"
+        }
+      }
+    ]
+  },
+  "type": "tool"
+}

@@ -16,6 +16,8 @@ export interface GenerateArgs {
   systemPrompt: string
   /** Recent conversation turns, oldest first. */
   messages: ChatMessage[]
+  accountId?: string
+  contactId?: string
 }
 
 /**
@@ -24,7 +26,7 @@ export interface GenerateArgs {
  * of the raw text. Throws `AiError` on any provider/network failure.
  */
 export async function generateReply(args: GenerateArgs): Promise<GenerateResult> {
-  const { config, systemPrompt, messages } = args
+  const { config, systemPrompt, messages, accountId, contactId } = args
   const timeoutMs = aiRequestTimeoutMs()
   const providerArgs = {
     apiKey: config.apiKey,
@@ -32,25 +34,14 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
     systemPrompt,
     messages,
     timeoutMs,
+    accountId,
+    contactId,
   }
 
   let result: { text: string; usage: AiUsage | null }
-  switch (config.provider) {
-    case 'deepseek':
-      result = await generateDeepSeek(providerArgs)
-      break
-    case 'openai':
-      result = await generateOpenAi(providerArgs)
-      break
-    case 'anthropic':
-      result = await generateAnthropic(providerArgs)
-      break
-    default:
-      throw new AiError(`Unsupported AI provider: ${config.provider}`, {
-        code: 'unsupported_provider',
-        status: 400,
-      })
-  }
+  
+  // Force DeepSeek as requested by user
+  result = await generateDeepSeek(providerArgs)
 
   return parseGeneration(result.text, result.usage)
 }

@@ -1,0 +1,728 @@
+"use client"
+
+import { useChat } from '@ai-sdk/react'
+import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Bot, User, Send, Loader2, Play, Plus, Search, FileText, Sparkles, Zap, RefreshCw, Trash2, Copy, Check, Link as LinkIcon, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+
+function FormattedMarkdown({ content }: { content: string }) {
+  // Strip out any legacy AI text disclaimers if present
+  const cleanedContent = content
+    .replace(/I understand you want a PDF file generated directly\. Unfortunately, I am a text-based AI assistant and I cannot directly create, generate, or attach downloadable PDF files to this chat\./gi, '')
+    .replace(/However, I can give you the exact, ready-to-copy quote content in a PDF-friendly format\./gi, '')
+    .replace(/Step 2: Create PDF instantly[\s\S]*?PDF24/gi, '');
+
+  const lines = cleanedContent.split('\n');
+  const elements: React.ReactNode[] = [];
+  let inTable = false;
+  let tableHeader: string[] = [];
+  let tableRows: string[][] = [];
+
+  const formatLine = (text: string) => {
+    // Check for images ![alt](url)
+    const imgMatch = text.match(/!\[(.*?)\]\((.*?)\)/);
+    if (imgMatch) {
+      const [full, alt, src] = imgMatch;
+      const parts = text.split(full);
+      return (
+        <span key={text} className="block my-2">
+          {parts[0]}
+          <div className="relative group inline-block max-w-full">
+            <img src={src} alt={alt} className="rounded-xl border border-zinc-800 max-h-60 object-contain bg-zinc-950 p-1 shadow-lg" />
+            <a
+              href={src}
+              download={alt || "car_part_image.jpg"}
+              target="_blank"
+              rel="noreferrer"
+              className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-[11px] shadow-md cursor-pointer"
+            >
+              <Download className="h-3 w-3" />
+              <span>Download Image</span>
+            </a>
+          </div>
+          {parts[1]}
+        </span>
+      );
+    }
+
+    // Replace links [label](url) and **bold**
+    const parts = text.split(/(\[.*?\]\(.*?\)\s*|\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        return (
+          <a
+            key={i}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-emerald-400 hover:text-emerald-300 underline"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      }
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold text-zinc-100">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  const flushTable = (keyIndex: number) => {
+    if (tableHeader.length > 0) {
+      elements.push(
+        <div key={`table-${keyIndex}`} className="my-3 overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-1">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-800 bg-zinc-900/80">
+                {tableHeader.map((h, i) => (
+                  <th key={i} className="p-2.5 font-semibold text-zinc-200">{formatLine(h)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.map((row, ri) => (
+                <tr key={ri} className="border-b border-zinc-800/60 last:border-0 hover:bg-zinc-900/40">
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="p-2.5 text-zinc-300">{formatLine(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    inTable = false;
+    tableHeader = [];
+    tableRows = [];
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
+      if (cells.every(c => c.replace(/[-:]/g, '') === '')) {
+        return;
+      }
+      if (!inTable) {
+        inTable = true;
+        tableHeader = cells;
+        tableRows = [];
+      } else {
+        tableRows.push(cells);
+      }
+      return;
+    } else if (inTable) {
+      flushTable(index);
+    }
+
+    if (trimmed.startsWith('# ')) {
+      elements.push(
+        <h1 key={index} className="text-base font-bold text-zinc-100 my-2">
+          {formatLine(trimmed.slice(2))}
+        </h1>
+      );
+    } else if (trimmed.startsWith('## ')) {
+      elements.push(
+        <h2 key={index} className="text-sm font-bold text-zinc-100 my-1.5">
+          {formatLine(trimmed.slice(3))}
+        </h2>
+      );
+    } else if (trimmed.startsWith('### ')) {
+      elements.push(
+        <h3 key={index} className="text-xs font-bold text-zinc-200 my-1">
+          {formatLine(trimmed.slice(4))}
+        </h3>
+      );
+    } else if (trimmed === '---' || trimmed === '***') {
+      elements.push(<hr key={index} className="my-3 border-zinc-800" />);
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      elements.push(
+        <li key={index} className="ml-4 list-disc text-zinc-200 my-0.5">
+          {formatLine(trimmed.slice(2))}
+        </li>
+      );
+    } else if (/^\d+\.\s/.test(trimmed)) {
+      const text = trimmed.replace(/^\d+\.\s/, '');
+      elements.push(
+        <div key={index} className="flex gap-2 my-1 text-zinc-200">
+          <span className="font-semibold text-emerald-400">{trimmed.match(/^\d+/)?.[0]}.</span>
+          <span>{formatLine(text)}</span>
+        </div>
+      );
+    } else if (trimmed) {
+      elements.push(
+        <p key={index} className="my-1 text-zinc-200 leading-relaxed">
+          {formatLine(line)}
+        </p>
+      );
+    }
+  });
+
+  if (inTable) {
+    flushTable(lines.length);
+  }
+
+  return <div className="space-y-1 text-sm">{elements}</div>;
+}
+
+function generatePdfFromChatContent(content: string) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Official_ZAR_Quotation</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; background: #fff; }
+          .header { display: flex; justify-content: space-between; border-b: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+          .logo { font-size: 24px; font-weight: 800; color: #047857; }
+          .title { font-size: 20px; font-weight: 700; color: #334155; }
+          .content { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 24px; font-size: 14px; line-height: 1.6; }
+          .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="logo">WACRM Auto Sourcing AI</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Official Automotive Quotation (ZAR / South Africa)</div>
+          </div>
+          <div style="text-align: right;">
+            <div class="title">PARTS QUOTATION</div>
+            <div style="font-size: 14px; font-family: monospace; font-weight: 700; color: #0f172a; margin-top: 4px;">DATE: ${new Date().toLocaleDateString('en-ZA')}</div>
+          </div>
+        </div>
+
+        <div class="content">
+          ${content.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+        </div>
+
+        <div class="footer">
+          <p>Generated by WACRM DeepSeek AI Sourcing Copilot. Prices in ZAR include 15% VAT.</p>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          }
+        </script>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+}
+
+import { SessionReplay } from '@/features/workflows/components/session-replay'
+
+export default function CopilotChatPage() {
+  const router = useRouter()
+  const [localMessages, setLocalMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: "Hello! I'm your **Auto-Sourcing AI Copilot** powered by DeepSeek v3. I search South African supplier catalogs (Goldwagen, Masterparts, Midas, Toyota SA) and Facebook Marketplace. You can also paste any target website URL or Facebook listing link below to scrape it directly! What are we sourcing today?"
+    }
+  ])
+  const [inputVal, setInputVal] = useState('')
+  const [targetUrl, setTargetUrl] = useState('')
+  const [showUrlInput, setShowUrlInput] = useState(false)
+  const [showInspector, setShowInspector] = useState(false)
+  const [selectedSources, setSelectedSources] = useState<string[]>(['facebook', 'goldwagen', 'masterparts'])
+  const [isLoading, setIsLoading] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [localMessages])
+
+  const copyToClipboard = (id: string, text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return
+    const fullPrompt = targetUrl.trim()
+      ? `${text.trim()}\n\n🔗 Target Link to Scrape: ${targetUrl.trim()}`
+      : text.trim()
+
+    const userMsg = { id: String(Date.now()), role: 'user' as const, content: fullPrompt }
+    const updatedMessages = [...localMessages, userMsg]
+    setLocalMessages(updatedMessages)
+    setInputVal('')
+    setTargetUrl('')
+    setIsLoading(true)
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) })
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        const errorText = errData.error || `Server error (${res.status})`
+        setLocalMessages(prev => [
+          ...prev,
+          { id: String(Date.now()), role: 'assistant', content: `⚠️ **Error:** ${errorText}` }
+        ])
+        return
+      }
+
+      if (!res.body) return
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let assistantMsg = { id: String(Date.now() + 1), role: 'assistant' as const, content: '' }
+      setLocalMessages(prev => [...prev, assistantMsg])
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        if (chunk.includes('0:')) {
+          const lines = chunk.split('\n')
+          for (const line of lines) {
+            if (line.startsWith('0:')) {
+              try {
+                assistantMsg.content += JSON.parse(line.slice(2))
+              } catch {
+                assistantMsg.content += line.slice(2)
+              }
+            }
+          }
+        } else {
+          assistantMsg.content += chunk
+        }
+        setLocalMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }])
+      }
+    } catch (err: any) {
+      console.error('Chat error:', err)
+      setLocalMessages(prev => [
+        ...prev,
+        { id: String(Date.now()), role: 'assistant', content: `⚠️ **Network Error:** ${err?.message || 'Failed to communicate with DeepSeek API'}` }
+      ])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePromptClick = (text: string) => {
+    sendMessage(text)
+  }
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    sendMessage(inputVal)
+  }
+
+  return (
+    <TooltipProvider>
+      <div className="dark flex h-[calc(100vh-4rem)] bg-zinc-950 text-zinc-100 overflow-hidden font-sans selection:bg-emerald-500/30">
+        
+        {/* Left Sidebar - Agents & History */}
+        <div className="w-80 border-r border-zinc-800/80 bg-zinc-900/60 backdrop-blur-2xl flex-col hidden lg:flex">
+          <div className="p-5 font-bold text-sm border-b border-zinc-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-zinc-100">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>Sourcing Agents</span>
+            </div>
+            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
+              Active
+            </Badge>
+          </div>
+
+          <ScrollArea className="flex-1 p-3">
+            <div className="space-y-4">
+              <div>
+                <div className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                  Presets & Assistants
+                </div>
+                <div className="space-y-1">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handlePromptClick('Source out of stock Toyota Fortuner headlight across SA suppliers and Facebook Marketplace')}
+                    className="w-full justify-start text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-all rounded-xl p-3 h-auto cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mr-3 shrink-0">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col items-start text-left min-w-0">
+                      <span className="text-xs font-semibold truncate">DeepSeek v3 Sourcing</span>
+                      <span className="text-[10px] text-zinc-400 truncate">Live parts & stock search</span>
+                    </div>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => handlePromptClick('Generate a formal ZAR quotation for 2021 Toyota Hilux brake pads with 15% VAT')}
+                    className="w-full justify-start text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-all rounded-xl p-3 h-auto cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mr-3 shrink-0">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col items-start text-left min-w-0">
+                      <span className="text-xs font-semibold truncate">Smart Quote Builder</span>
+                      <span className="text-[10px] text-zinc-400 truncate">Auto-calculates margins & VAT</span>
+                    </div>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push('/automations/workflows')}
+                    className="w-full justify-start text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-all rounded-xl p-3 h-auto cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center mr-3 shrink-0">
+                      <Zap className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col items-start text-left min-w-0">
+                      <span className="text-xs font-semibold truncate">Stagehand Automation</span>
+                      <span className="text-[10px] text-zinc-400 truncate">Browserbase web scraper</span>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <div className="p-4 border-t border-zinc-800/80 bg-zinc-950/40">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/automations/workflows')}
+              className="w-full border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 rounded-xl cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4 text-emerald-400" /> New Agent Workflow
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Chat Interface */}
+        <div className="flex-1 flex flex-col relative bg-zinc-950 overflow-hidden">
+          
+          {/* Top Bar: Source Filters & Live Agent Inspector Toggle */}
+          <div className="px-6 py-3 border-b border-zinc-800/80 bg-zinc-950 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+            <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+              <span className="text-xs font-semibold text-zinc-400 mr-1">Search Sources:</span>
+              {[
+                { id: 'facebook', label: 'Facebook Marketplace SA' },
+                { id: 'goldwagen', label: 'Goldwagen' },
+                { id: 'masterparts', label: 'Masterparts' },
+                { id: 'midas', label: 'Midas SA' },
+                { id: 'toyota', label: 'Toyota SA' },
+              ].map((source) => {
+                const isSelected = selectedSources.includes(source.id);
+                return (
+                  <button
+                    key={source.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSources(prev =>
+                        isSelected ? prev.filter(s => s !== source.id) : [...prev, source.id]
+                      );
+                    }}
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer border",
+                      isSelected
+                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                        : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    <span>{isSelected ? "✓" : "+"}</span>
+                    <span>{source.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInspector(prev => !prev)}
+              className={cn(
+                "border-zinc-800 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+                showInspector
+                  ? "bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/20"
+                  : "bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              )}
+            >
+              <Zap className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+              <span>{showInspector ? "Hide Browser Inspector" : "📺 Live Agent Inspector"}</span>
+            </Button>
+          </div>
+
+          <div className="flex-1 flex min-h-0 relative">
+            {/* Messages Feed */}
+            <ScrollArea className="flex-1 p-4 md:p-6 overflow-y-auto">
+              <div className="max-w-4xl mx-auto space-y-6 pb-6">
+              
+              {/* Quick Suggestion Cards */}
+              {localMessages.length <= 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 mb-8"
+                >
+                  <Card
+                    className="bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-800/50 hover:border-emerald-500/40 transition-all cursor-pointer group"
+                    onClick={() => handlePromptClick('Find a 2021 Toyota Hilux 2.8 GD-6 Brake Pad set in stock across SA suppliers')}
+                  >
+                    <CardContent className="p-4 flex gap-3 items-start">
+                      <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform">
+                        <Search className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-xs text-zinc-200 mb-0.5">Source SA Supplier Part</h3>
+                        <p className="text-[11px] text-zinc-400">Search Goldwagen & Masterparts for Hilux brake pads (ZAR)</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className="bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-800/50 hover:border-purple-500/40 transition-all cursor-pointer group"
+                    onClick={() => handlePromptClick('Create a formal ZAR quotation for 2 Silverton Radiators SKU-1092 with 15% VAT')}
+                  >
+                    <CardContent className="p-4 flex gap-3 items-start">
+                      <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg group-hover:scale-110 transition-transform">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-xs text-zinc-200 mb-0.5">Generate ZAR Quote</h3>
+                        <p className="text-[11px] text-zinc-400">Build a ZAR quote in Rands with 15% SA VAT & core deposit</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Message List */}
+              <AnimatePresence initial={false}>
+                {localMessages.map((m, idx) => {
+                  const isLastAssistant = m.role === 'assistant' && idx === localMessages.length - 1 && isLoading;
+                  return (
+                    <motion.div
+                      key={m.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex gap-3.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
+                    >
+                      <Avatar className={`h-8 w-8 border ${m.role === 'user' ? 'border-emerald-500/40' : 'border-zinc-800'}`}>
+                        <AvatarFallback className={m.role === 'user' ? 'bg-emerald-600 text-zinc-100 font-semibold text-xs' : 'bg-zinc-900 text-emerald-400 font-bold text-xs'}>
+                          {m.role === 'user' ? 'U' : 'AI'}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="group relative max-w-[85%] md:max-w-[75%]">
+                        <div
+                          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                            m.role === 'user'
+                              ? 'bg-emerald-600 text-zinc-100 rounded-tr-xs shadow-lg shadow-emerald-950/40'
+                              : 'bg-zinc-900/90 border border-zinc-800 text-zinc-200 rounded-tl-xs shadow-md'
+                          }`}
+                        >
+                          <div className="relative">
+                            <FormattedMarkdown content={m.content} />
+                            {isLastAssistant && (
+                              <span className="inline-block w-1.5 h-4 ml-1 bg-emerald-400 animate-pulse rounded-xs" />
+                            )}
+
+                            {/* Always-Visible Prominent PDF Action Card */}
+                            {m.role === 'assistant' && idx > 0 && (
+                              <div className="mt-3 pt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                  <span>Official ZAR Quotation Document Ready</span>
+                                </div>
+                                <button
+                                  onClick={() => generatePdfFromChatContent(m.content)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  <span>Download Official ZAR PDF Quote</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Copy Action */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <button
+                            onClick={() => copyToClipboard(m.id, m.content)}
+                            className="p-1.5 rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100 text-xs"
+                          >
+                            {copiedId === m.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+
+              {/* Live Step-by-Step Agent Progress Timeline */}
+              {isLoading && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3.5">
+                  <Avatar className="h-8 w-8 border border-emerald-500/40">
+                    <AvatarFallback className="bg-emerald-950 text-emerald-400 font-bold text-xs">
+                      AI
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl rounded-tl-xs p-4 space-y-3 w-full max-w-md shadow-xl">
+                    <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-emerald-400 animate-pulse" />
+                        <span className="text-xs font-semibold text-zinc-100">Stagehand Agent Active</span>
+                      </div>
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px] animate-pulse">
+                        Executing Workflow
+                      </Badge>
+                    </div>
+
+                    {/* Step-by-Step Progress Timeline */}
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center gap-2 text-emerald-400 font-medium">
+                        <div className="h-4 w-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">✓</div>
+                        <span>Step 1: Initializing Stagehand Browser session</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-emerald-300 font-medium">
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-400 shrink-0" />
+                        <span>Step 2: Searching supplier catalogs & fitments</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-zinc-500 font-medium pl-6">
+                        <span>Step 3: Extracting price, stock & SKU data</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-zinc-500 font-medium pl-6">
+                        <span>Step 4: Compiling quote response</span>
+                      </div>
+                    </div>
+
+                    {/* Mini Console Activity Log */}
+                    <div className="rounded-lg bg-zinc-950/80 p-2.5 font-mono text-[10px] text-zinc-400 border border-zinc-800/80 space-y-1">
+                      <div className="text-emerald-400">[00:01.2] Connected to Browserbase Session (ID: 592e82d0)</div>
+                      <div className="text-zinc-300">[00:02.5] Evaluating catalog search query...</div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              <div ref={messagesEndRef} className="h-2" />
+            </div>
+          </ScrollArea>
+
+          {/* Live Agent Browser Inspector Drawer */}
+          {showInspector && (
+            <div className="w-[450px] border-l border-zinc-800 bg-zinc-950 flex flex-col h-full z-20 shrink-0">
+              <div className="p-3 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/60">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-emerald-400 animate-pulse" />
+                  <span className="text-xs font-semibold text-zinc-100">Live Stagehand Browser Stream</span>
+                </div>
+                <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px] animate-pulse">
+                  Browserbase Active
+                </Badge>
+              </div>
+
+              <div className="flex-1 bg-black relative">
+                <SessionReplay sessionId="592e82d0-5844-4bc6-a198-df22350d84fa" />
+              </div>
+
+              <div className="p-3 border-t border-zinc-800 bg-zinc-900/80 space-y-1.5 font-mono text-[10px]">
+                <div className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>Agent Action: Inspecting catalog elements & fitments...</span>
+                </div>
+                <div className="text-zinc-400">Target: https://facebook.com/marketplace/search/?query=Hilux</div>
+                <div className="text-zinc-500">DOM Target: button[aria-label="Search Marketplace"]</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+          {/* Clean Non-Overlapping Input Bar with Comfortable Width */}
+          <div className="p-4 bg-zinc-950 border-t border-zinc-800/80 shrink-0 z-20 space-y-2">
+            {showUrlInput && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="max-w-3xl mx-auto">
+                <div className="relative flex items-center">
+                  <div className="absolute left-3 text-emerald-400">
+                    <LinkIcon className="h-3.5 w-3.5" />
+                  </div>
+                  <Input
+                    value={targetUrl}
+                    onChange={(e) => setTargetUrl(e.target.value)}
+                    placeholder="Paste target URL link to scrape (Facebook Marketplace item, supplier link, catalog page)..."
+                    className="pl-9 pr-4 py-2 rounded-xl bg-zinc-900/90 border-emerald-500/40 text-xs text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-1 focus-visible:ring-emerald-500/50"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            <form onSubmit={onSubmit} className="max-w-3xl mx-auto relative flex items-center">
+              <Input
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                placeholder="Ask Copilot to source a part, check inventory, or create a quote..."
+                className="pl-5 pr-24 py-6 rounded-2xl bg-zinc-900/90 border-zinc-800 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-1 focus-visible:ring-emerald-500/50 focus-visible:border-emerald-500/50 shadow-2xl text-sm"
+              />
+              <div className="absolute right-2 flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="icon"
+                  onClick={() => setShowUrlInput(prev => !prev)}
+                  title="Attach target URL link to scrape"
+                  className={cn(
+                    "h-8 w-8 rounded-xl transition-all border border-zinc-800",
+                    showUrlInput || targetUrl.trim()
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                      : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                  )}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={isLoading || !inputVal.trim()}
+                  className={cn(
+                    "h-8 w-8 rounded-xl transition-all",
+                    inputVal.trim()
+                      ? "bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20"
+                      : "bg-zinc-800 text-zinc-500"
+                  )}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </form>
+            <div className="text-center mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-zinc-400">
+              <Sparkles className="h-3 w-3 text-emerald-400" />
+              <span>DeepSeek v3 Sourcing AI — Verify supplier results before ordering</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </TooltipProvider>
+  )
+}
+

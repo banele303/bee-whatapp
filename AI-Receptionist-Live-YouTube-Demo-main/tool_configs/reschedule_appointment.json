@@ -1,0 +1,34 @@
+{
+    "name": "reschedule_appointment",
+  "description": "Move an existing booking to one exact staff-and-time slot returned by get_availability. Copy its slot_id exactly. Requires the current confirmation code and matching contact phone number. Only claim success when the tool succeeds, and report the team_member_name returned by this tool.",
+    "type": "client",
+    "expects_response": true,
+    "pre_tool_speech": "off",
+    "response_timeout_secs": 30,
+    "parameters": {
+        "type": "object",
+        "description": "Booking credentials and the selected replacement slot.",
+        "properties": {
+            "confirmation_code": {
+                "type": "string",
+                "description": "Current booking confirmation code."
+            },
+            "phone": {
+                "type": "string",
+                "description": "Contact phone number stored on the booking."
+            },
+      "slot_id": {
+        "type": "string",
+        "description": "Exact slot_id for the chosen replacement team member and time, copied from get_availability. Never invent or alter it."
+            }
+        },
+        "required": [
+      "confirmation_code",
+      "phone",
+      "slot_id"
+        ]
+    },
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

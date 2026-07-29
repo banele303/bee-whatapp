@@ -10,6 +10,8 @@ export interface ProviderArgs {
   systemPrompt: string
   messages: ChatMessage[]
   timeoutMs: number
+  accountId?: string
+  contactId?: string
 }
 
 /**

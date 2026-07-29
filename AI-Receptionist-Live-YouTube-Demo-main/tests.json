@@ -1,0 +1,14 @@
+{
+    "tests": [
+        {
+            "config": "test_configs/no-spoken-reasoning.json",
+            "type": "basic-llm",
+            "id": "test_5401kxp5fb6qf0a9b07vdq74xtpf"
+        },
+        {
+            "config": "test_configs/books-selected-team-member-slot.json",
+            "type": "tool",
+            "id": "test_4401kxp7nttgf67bsd2k1e0hsb4d"
+        }
+    ]
+}

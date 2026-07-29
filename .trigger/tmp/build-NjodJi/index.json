@@ -1,0 +1,32 @@
+{
+  "configPath": "C:\\Users\\Mr Ness\\Documents\\Ai\\wacrm-main\\.trigger\\tmp\\build-d21PJi\\Documents\\Ai\\wacrm-main\\trigger.config.mjs",
+  "customConditions": [
+  ],
+  "prompts": [
+  ],
+  "queues": [
+  ],
+  "runtime": "node",
+  "runtimeVersion": "22.14.0",
+  "skills": [
+  ],
+  "tasks": [
+    {
+      "entryPoint": "C:\\Users\\Mr Ness\\Documents\\Ai\\wacrm-main\\.trigger\\tmp\\build-d21PJi\\Documents\\Ai\\wacrm-main\\src\\features\\workflows\\tasks\\run-workflow.mjs",
+      "filePath": "src/features/workflows/tasks/run-workflow.ts",
+      "id": "run-workflow",
+      "maxDuration": 300,
+      "retry": {
+        "factor": 2,
+        "maxAttempts": 3,
+        "maxTimeoutInMs": 10000,
+        "minTimeoutInMs": 1000,
+        "randomize": true
+      }
+    }
+  ],
+  "timings": {
+    "src/features/workflows/tasks/run-workflow.ts": 1245.3365000000003
+  },
+  "workerEntryPoint": "C:\\Users\\Mr Ness\\Documents\\Ai\\wacrm-main\\.trigger\\tmp\\build-d21PJi\\AppData\\Local\\npm-cache\\_npx\\ed74957a992713fd\\node_modules\\trigger.dev\\dist\\esm\\entryPoints\\dev-run-worker.mjs"
+}

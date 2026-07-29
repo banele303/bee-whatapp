@@ -1,0 +1,16 @@
+{
+    "name": "get_business_info",
+    "description": "Return the current organization's published offerings, prices, durations, team members, and timezone. Use this instead of guessing business details.",
+    "type": "client",
+    "expects_response": true,
+    "pre_tool_speech": "off",
+    "response_timeout_secs": 30,
+    "parameters": {
+        "type": "object",
+        "description": "No parameters are required.",
+        "properties": {}
+    },
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}
