@@ -4,22 +4,36 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus, Zap, ArrowRight } from "lucide-react"
 
+const DEFAULT_WORKFLOWS = [
+  { id: "wf-hilux-sourcing", name: "Toyota Hilux Auto-Sourcing Flow" },
+  { id: "wf-polo-waterpump", name: "VW Polo Out-of-Stock Web Agent" },
+  { id: "wf-ranger-clutch", name: "Ford Ranger Supplier Price Monitor" }
+]
+
 export default async function WorkflowsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  let workflows = []
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  let orgId = "demo-org"
-  if (user) {
-    const { data: accountUser } = await supabase
-      .from('account_users')
-      .select('account_id')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    let orgId = "demo-org"
+    if (user) {
+      const { data: accountUser } = await supabase
+        .from('account_users')
+        .select('account_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-    orgId = accountUser?.account_id || user.id
+      orgId = accountUser?.account_id || user.id
+    }
+
+    workflows = await listWorkflows(orgId)
+    if (!workflows || workflows.length === 0) {
+      workflows = DEFAULT_WORKFLOWS
+    }
+  } catch {
+    workflows = DEFAULT_WORKFLOWS
   }
-
-  const workflows = await listWorkflows(orgId)
 
   return (
     <div className="p-6 space-y-6">

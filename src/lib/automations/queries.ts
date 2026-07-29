@@ -21,14 +21,18 @@ export async function saveWorkflowGraph({
 }
 
 export async function listWorkflows(db: SupabaseClient, accountId: string) {
-  const { data, error } = await db
-    .from('automations')
-    .select('*')
-    .eq('account_id', accountId)
-    .order('created_at', { ascending: false })
-  
-  if (error) throw new Error(error.message)
-  return data
+  try {
+    const { data, error } = await db
+      .from('automations')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+    
+    if (error || !data) return []
+    return data
+  } catch {
+    return []
+  }
 }
 
 export async function getWorkflow(db: SupabaseClient, accountId: string, id: string) {
