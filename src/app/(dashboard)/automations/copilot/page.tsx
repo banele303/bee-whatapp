@@ -417,16 +417,16 @@ export default function CopilotChatPage() {
 
   return (
     <TooltipProvider>
-      <div className="dark flex h-[calc(100vh-4rem)] bg-zinc-950 text-zinc-100 overflow-hidden font-sans selection:bg-emerald-500/30">
+      <div className="flex h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden font-sans">
         
-        {/* Left Sidebar - Agents & History */}
-        <div className="w-80 border-r border-zinc-800/80 bg-zinc-900/60 backdrop-blur-2xl flex-col hidden lg:flex">
-          <div className="p-5 font-bold text-sm border-b border-zinc-800/80 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-zinc-100">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>Sourcing Agents</span>
+        {/* Left Sidebar - Agents & Presets */}
+        <div className="w-80 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col hidden lg:flex">
+          <div className="p-5 font-bold text-sm border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <Sparkles className="w-4 h-4 text-orange-500" />
+              <span>Sourcing Copilot</span>
             </div>
-            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
+            <Badge variant="outline" className="border-orange-500/30 text-orange-600 dark:text-orange-400 bg-orange-500/10 text-[10px]">
               Active
             </Badge>
           </div>
@@ -499,9 +499,9 @@ export default function CopilotChatPage() {
         <div className="flex-1 flex flex-col relative bg-zinc-950 overflow-hidden">
           
           {/* Top Bar: Source Filters & Live Agent Inspector Toggle */}
-          <div className="px-6 py-3 border-b border-zinc-800/80 bg-zinc-950 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+          <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10 shadow-xs">
             <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-              <span className="text-xs font-semibold text-zinc-400 mr-1">Search Sources:</span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Search Sources:</span>
               {[
                 { id: 'facebook', label: 'Facebook Marketplace SA' },
                 { id: 'goldwagen', label: 'Goldwagen' },
@@ -522,8 +522,8 @@ export default function CopilotChatPage() {
                     className={cn(
                       "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer border",
                       isSelected
-                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-                        : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                        ? "bg-orange-500/10 border-orange-500/40 text-orange-600 dark:text-orange-400 font-semibold"
+                        : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                     )}
                   >
                     <span>{isSelected ? "✓" : "+"}</span>
@@ -538,13 +538,13 @@ export default function CopilotChatPage() {
               size="sm"
               onClick={() => setShowInspector(prev => !prev)}
               className={cn(
-                "border-zinc-800 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+                "border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer",
                 showInspector
-                  ? "bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/20"
-                  : "bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+                  ? "bg-orange-500 text-white border-orange-600 font-bold shadow-md"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
               )}
             >
-              <Zap className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+              <Zap className="mr-1.5 h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
               <span>{showInspector ? "Hide Browser Inspector" : "📺 Live Agent Inspector"}</span>
             </Button>
           </div>
