@@ -38,8 +38,7 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
         searchInventory: searchInventoryTool(accountId || '') as any,
         createQuote: createQuoteTool(accountId || '', contactId || '') as any,
         sourceOutOfStock: sourceOutOfStockPartTool as any
-      },
-      maxSteps: 5
+      }
     })
 
     const normalizedUsage = normalizeUsage({
