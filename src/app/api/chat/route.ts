@@ -61,6 +61,8 @@ When a customer asks about parts:
         createQuote: createQuoteTool(accountId || '', '') as any,
         sourceOutOfStock: sourceOutOfStockPartTool as any,
       },
+      // @ts-ignore
+      maxSteps: 5,
     });
 
     if (typeof (result as any).toDataStreamResponse === 'function') {

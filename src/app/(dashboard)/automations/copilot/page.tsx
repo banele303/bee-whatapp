@@ -731,7 +731,7 @@ export default function CopilotChatPage() {
                             )}
 
                             {/* Always-Visible Prominent PDF Action Card */}
-                            {m.role === 'assistant' && idx > 0 && (
+                            {m.role === 'assistant' && idx > 0 && m.content.includes('Official ZAR PDF') && (
                               <div className="mt-3 pt-3 border-t border-border/80 flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
                                   <Sparkles className="h-3.5 w-3.5" />
