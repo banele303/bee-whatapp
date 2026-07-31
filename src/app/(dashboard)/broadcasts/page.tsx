@@ -275,6 +275,11 @@ export default function BroadcastsPage() {
                         )}
                         {tStatus(status.label)}
                       </span>
+                      {(broadcast.status === 'sent' || broadcast.status === 'partial' || broadcast.status === 'failed') && broadcast.failed_count > 0 && (
+                        <span className="ml-1.5 text-[10px] text-red-400 tabular-nums">
+                          {broadcast.failed_count} failed
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">
                       {new Date(broadcast.created_at).toLocaleDateString()}

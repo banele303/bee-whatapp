@@ -320,7 +320,11 @@ export async function deliverBroadcast(
   await db
     .from('broadcasts')
     .update({
-      status: sentCount > 0 ? 'sent' : 'failed',
+      status: sentCount === 0
+        ? 'failed'
+        : sentCount < plan.planned.length
+          ? 'partial'
+          : 'sent',
       updated_at: new Date().toISOString(),
     })
     .eq('id', plan.broadcastId);

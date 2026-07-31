@@ -71,6 +71,10 @@ export function buildSystemPrompt(args: {
     parts.push(
       `You are replying automatically with no human in the loop. If you cannot confidently and safely help — the customer explicitly asks for a human, is upset or complaining, or the request needs information you do not have — reply with exactly ${HANDOFF_SENTINEL} and nothing else. A human agent will then take over. Prefer handing off over guessing.`,
     )
+    parts.push(
+      'You have access to tools: searchInventory (search parts catalog), createQuote (generate formal ZAR quotes with 15% VAT), and sourceOutOfStock (find parts from external suppliers). ' +
+      'When a customer asks about parts availability or prices, use searchInventory first. If they want to buy, use createQuote. If a part is out of stock, use sourceOutOfStock.',
+    )
   }
 
   if (userPrompt && userPrompt.trim()) {

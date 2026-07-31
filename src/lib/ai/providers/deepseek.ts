@@ -38,15 +38,10 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
         searchInventory: searchInventoryTool(accountId || '') as any,
         createQuote: createQuoteTool(accountId || '', contactId || '') as any,
         sourceOutOfStock: sourceOutOfStockPartTool as any
-      }
+      },
+      maxSteps: 5
     })
 
-    if (!text || typeof text !== 'string' || !text.trim()) {
-      throw new AiError('DeepSeek returned an empty response.', {
-        code: 'empty_response',
-      })
-    }
-    
     const normalizedUsage = normalizeUsage({
       prompt: (usage as any)?.promptTokens,
       completion: (usage as any)?.completionTokens,

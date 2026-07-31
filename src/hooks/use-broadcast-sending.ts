@@ -558,7 +558,11 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
       // Aggregate counts are maintained by the DB trigger (migration
       // 003); we only flip the final status here.
       setProgress(95);
-      const finalStatus = failedCount === totalRecipients ? 'failed' : 'sent';
+      const finalStatus = failedCount === totalRecipients
+        ? 'failed'
+        : failedCount > 0
+          ? 'partial'
+          : 'sent';
       await supabase
         .from('broadcasts')
         .update({ status: finalStatus })

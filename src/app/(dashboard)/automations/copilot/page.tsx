@@ -6,7 +6,7 @@ import { useChat } from '@ai-sdk/react'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, User, Send, Loader2, Play, Plus, Search, FileText, Sparkles, Zap, RefreshCw, Trash2, Copy, Check, Link as LinkIcon, Download } from 'lucide-react'
+import { Bot, User, Send, Loader2, Play, Plus, Search, FileText, Sparkles, Zap, RefreshCw, Trash2, Copy, Check, Link as LinkIcon, Download, Package, Wrench, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -327,7 +327,17 @@ export default function CopilotChatPage() {
   const [selectedSources, setSelectedSources] = useState<string[]>(['facebook', 'goldwagen', 'masterparts'])
   const [isLoading, setIsLoading] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [recentQuotes, setRecentQuotes] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch('/api/quotes')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setRecentQuotes(data.slice(0, 3))
+      })
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -479,6 +489,76 @@ export default function CopilotChatPage() {
                       <span className="text-[10px] text-muted-foreground/80 truncate">Browserbase web scraper</span>
                     </div>
                   </Button>
+                </div>
+              </div>
+
+              {/* Agent Tools Panel */}
+              <div className="pt-4 border-t border-border/50">
+                <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider flex items-center gap-1.5">
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Active AI Tools
+                </div>
+                <div className="space-y-1.5 px-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
+                    <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500">
+                      <Search className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-semibold text-foreground truncate">searchInventory</div>
+                      <div className="text-[9px] text-muted-foreground truncate">Live catalog stock check</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
+                    <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500">
+                      <FileText className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-semibold text-foreground truncate">createQuote</div>
+                      <div className="text-[9px] text-muted-foreground truncate">ZAR Quote with 15% VAT</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
+                    <div className="p-1.5 rounded-md bg-orange-500/10 text-orange-500">
+                      <Package className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-semibold text-foreground truncate">sourceOutOfStock</div>
+                      <div className="text-[9px] text-muted-foreground truncate">External supplier scouting</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Quotes */}
+              <div className="pt-4 border-t border-border/50">
+                <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider flex items-center justify-between">
+                  <span>Recent Quotes</span>
+                  <button onClick={() => router.push('/quotes')} className="text-emerald-500 hover:text-emerald-400 text-[10px] cursor-pointer">View All</button>
+                </div>
+                <div className="space-y-1">
+                  {recentQuotes.length === 0 ? (
+                    <div className="px-2 text-xs text-muted-foreground italic">No recent quotes</div>
+                  ) : (
+                    recentQuotes.map(quote => (
+                      <button
+                        key={quote.id}
+                        onClick={() => router.push('/quotes')}
+                        className="w-full text-left p-2 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-foreground group-hover:text-emerald-500 transition-colors truncate">
+                            {quote.quote_number}
+                          </span>
+                          <span className="text-[10px] font-bold text-foreground">
+                            R {quote.total_amount.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {quote.customer_name}
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { streamText } from 'ai';
 import { deepseek } from '@ai-sdk/deepseek';
+import { searchInventoryTool, createQuoteTool, sourceOutOfStockPartTool } from '@/lib/ai/tools/parts-tools';
 
 export const maxDuration = 30;
 
@@ -12,6 +13,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const rawMessages = body.messages || [];
+    const accountId = body.accountId;
 
     // Sanitize messages to standard ChatMessage shape
     const formattedMessages: ChatMessage[] = rawMessages.map((m: any) => ({
@@ -41,8 +43,25 @@ CRITICAL SOURCING & LINK RULES:
    - Alternator: ![Alternator 12V](https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=600&auto=format&fit=crop)
    - Oil/Fuel Filter: ![Filter Element](https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&auto=format&fit=crop)
 4. CURRENCY & VAT: Always display all prices in ZAR (Rands). Include 15% South African VAT in itemized pricing tables.
-5. QUOTATION DELIVERABLE: When generating a quote, present the clean itemized ZAR table and state: "Here is your official quotation! Click the **Download Official ZAR PDF Quote** button below to generate your printable PDF."`,
+5. QUOTATION DELIVERABLE: When generating a quote, present the clean itemized ZAR table and state: "Here is your official quotation! Click the **Download Official ZAR PDF Quote** button below to generate your printable PDF."
+
+You have access to the following tools:
+1. **searchInventory**: Search the parts catalog by name, SKU, or vehicle fitment. Always search inventory first before quoting.
+2. **createQuote**: Create a formal ZAR quote with 15% VAT. Use after confirming parts availability.
+3. **sourceOutOfStock**: Find parts from external suppliers when out of stock.
+
+When a customer asks about parts:
+1. First use searchInventory to check stock
+2. If found, present the results with prices
+3. If they want to buy, use createQuote to generate a formal quote
+4. If out of stock, use sourceOutOfStock to find external suppliers`,
       messages: formattedMessages,
+      tools: {
+        searchInventory: searchInventoryTool(accountId || '') as any,
+        createQuote: createQuoteTool(accountId || '', '') as any,
+        sourceOutOfStock: sourceOutOfStockPartTool as any,
+      },
+      maxSteps: 5,
     });
 
     if (typeof (result as any).toDataStreamResponse === 'function') {
