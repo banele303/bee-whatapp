@@ -17,11 +17,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { createClient } from '@/lib/supabase/client'
 
 function FormattedMarkdown({ content }: { content: string }) {
-  // Strip out legacy disclaimers and force proper newlines around markdown tables
+  // Strip out legacy disclaimers, convert <br> tags to newlines, and force proper newlines around markdown tables
   const cleanedContent = content
     .replace(/I understand you want a PDF file generated directly\. Unfortunately, I am a text-based AI assistant and I cannot directly create, generate, or attach downloadable PDF files to this chat\./gi, '')
     .replace(/However, I can give you the exact, ready-to-copy quote content in a PDF-friendly format\./gi, '')
     .replace(/Step 2: Create PDF instantly[\s\S]*?PDF24/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
     .replace(/\|\|/g, '|\n|')
     .replace(/([^\n])\|/g, '$1\n|');
 
