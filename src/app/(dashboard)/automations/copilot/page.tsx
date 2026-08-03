@@ -383,9 +383,48 @@ export default function CopilotChatPage() {
       .catch(console.error)
   }, [])
 
+  // Load saved chat history from localStorage on mount
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    try {
+      const saved = localStorage.getItem('wacrm_copilot_chat_history')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLocalMessages(parsed)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load chat history:', e)
+    }
+  }, [])
+
+  // Auto-save chat history to localStorage whenever localMessages updates
+  useEffect(() => {
+    if (localMessages.length > 0) {
+      try {
+        localStorage.setItem('wacrm_copilot_chat_history', JSON.stringify(localMessages))
+      } catch (e) {
+        console.error('Failed to save chat history:', e)
+      }
+    }
   }, [localMessages])
+
+  const clearChatHistory = () => {
+    const initialMsg = [
+      {
+        id: '1',
+        role: 'assistant' as const,
+        content: "Hello! I'm your **Auto-Sourcing AI Copilot** powered by DeepSeek v3. I search South African supplier catalogs (Goldwagen, Masterparts, Midas, Toyota SA) and Facebook Marketplace. You can also paste any target website URL or Facebook listing link below to scrape it directly! What are we sourcing today?"
+      }
+    ]
+    setLocalMessages(initialMsg)
+    try {
+      localStorage.removeItem('wacrm_copilot_chat_history')
+    } catch (e) {
+      console.error('Failed to clear chat history:', e)
+    }
+    toast.success('Chat history cleared')
+  }
 
   const copyToClipboard = (id: string, text: string) => {
     navigator.clipboard.writeText(text)
@@ -677,20 +716,33 @@ export default function CopilotChatPage() {
               })}
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowInspector(prev => !prev)}
-              className={cn(
-                "border-border text-xs font-semibold rounded-xl transition-all cursor-pointer",
-                showInspector
-                  ? "bg-orange-500 text-white border-orange-600 font-bold shadow-md"
-                  : "bg-card text-foreground/80 hover:bg-muted"
-              )}
-            >
-              <Zap className="mr-1.5 h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
-              <span>{showInspector ? "Hide Browser Inspector" : "📺 Live Agent Inspector"}</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearChatHistory}
+                title="Clear conversation history"
+                className="border-border bg-card text-xs font-semibold rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                <span>Clear Chat</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInspector(prev => !prev)}
+                className={cn(
+                  "border-border text-xs font-semibold rounded-xl transition-all cursor-pointer",
+                  showInspector
+                    ? "bg-orange-500 text-white border-orange-600 font-bold shadow-md"
+                    : "bg-card text-foreground/80 hover:bg-muted"
+                )}
+              >
+                <Zap className="mr-1.5 h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
+                <span>{showInspector ? "Hide Browser Inspector" : "📺 Live Agent Inspector"}</span>
+              </Button>
+            </div>
           </div>
 
           <div className="flex-1 flex min-h-0 relative">
