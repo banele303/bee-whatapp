@@ -411,19 +411,19 @@ export default function CopilotChatPage() {
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        if (chunk.includes('0:')) {
-          const lines = chunk.split('\n')
-          for (const line of lines) {
-            if (line.startsWith('0:')) {
-              try {
-                assistantMsg.content += JSON.parse(line.slice(2))
-              } catch {
-                assistantMsg.content += line.slice(2)
-              }
+
+        const lines = chunk.split('\n')
+        for (const line of lines) {
+          if (!line.trim()) continue
+          if (line.startsWith('0:')) {
+            try {
+              assistantMsg.content += JSON.parse(line.slice(2))
+            } catch {
+              assistantMsg.content += line.slice(2)
             }
+          } else if (!line.match(/^[0-9a-z]:/)) {
+            assistantMsg.content += line
           }
-        } else {
-          assistantMsg.content += chunk
         }
         setLocalMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }])
       }
