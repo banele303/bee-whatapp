@@ -383,31 +383,47 @@ export default function CopilotChatPage() {
       .catch(console.error)
   }, [])
 
-  // Load saved chat history from localStorage on mount
+  // Load saved chat history from Database & localStorage on mount / accountId ready
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('wacrm_copilot_chat_history')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setLocalMessages(parsed)
+    if (!accountId) return;
+    fetch(`/api/copilot/history?accountId=${accountId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          setLocalMessages(data.messages)
+        } else {
+          try {
+            const saved = localStorage.getItem('wacrm_copilot_chat_history')
+            if (saved) {
+              const parsed = JSON.parse(saved)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setLocalMessages(parsed)
+              }
+            }
+          } catch {}
         }
-      }
-    } catch (e) {
-      console.error('Failed to load chat history:', e)
-    }
-  }, [])
+      })
+      .catch(console.error)
+  }, [accountId])
 
-  // Auto-save chat history to localStorage whenever localMessages updates
+  // Auto-save chat history to Database & localStorage whenever localMessages updates
   useEffect(() => {
     if (localMessages.length > 0) {
       try {
         localStorage.setItem('wacrm_copilot_chat_history', JSON.stringify(localMessages))
       } catch (e) {
-        console.error('Failed to save chat history:', e)
+        console.error('Failed to save chat history to localStorage:', e)
+      }
+
+      if (accountId) {
+        fetch('/api/copilot/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountId, messages: localMessages }),
+        }).catch(console.error)
       }
     }
-  }, [localMessages])
+  }, [localMessages, accountId])
 
   const clearChatHistory = () => {
     const initialMsg = [
@@ -421,7 +437,11 @@ export default function CopilotChatPage() {
     try {
       localStorage.removeItem('wacrm_copilot_chat_history')
     } catch (e) {
-      console.error('Failed to clear chat history:', e)
+      console.error('Failed to clear local chat history:', e)
+    }
+
+    if (accountId) {
+      fetch(`/api/copilot/history?accountId=${accountId}`, { method: 'DELETE' }).catch(console.error)
     }
     toast.success('Chat history cleared')
   }
