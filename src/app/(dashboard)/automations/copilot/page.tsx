@@ -6,7 +6,7 @@ import { useChat } from '@ai-sdk/react'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, User, Send, Loader2, Play, Plus, Search, FileText, Sparkles, Zap, RefreshCw, Trash2, Copy, Check, Link as LinkIcon, Download, Package, Wrench, Settings2 } from 'lucide-react'
+import { Bot, User, Send, Loader2, Play, Plus, Search, FileText, Sparkles, Zap, RefreshCw, Trash2, Copy, Check, Link as LinkIcon, Download, Package, Wrench, Settings2, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { createClient } from '@/lib/supabase/client'
 
 function FormattedMarkdown({ content }: { content: string }) {
   // Strip out any legacy AI text disclaimers if present
@@ -328,7 +329,25 @@ export default function CopilotChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [recentQuotes, setRecentQuotes] = useState<any[]>([])
+  const [accountId, setAccountId] = useState<string | null>(null)
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase
+          .from('profiles')
+          .select('account_id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.account_id) setAccountId(data.account_id)
+          })
+      }
+    })
+  }, [])
 
   useEffect(() => {
     fetch('/api/quotes')
@@ -366,7 +385,10 @@ export default function CopilotChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) })
+        body: JSON.stringify({
+          accountId,
+          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+        })
       })
 
       if (!res.ok) {
@@ -730,20 +752,40 @@ export default function CopilotChatPage() {
                               <span className="inline-block w-1.5 h-4 ml-1 bg-emerald-400 animate-pulse rounded-xs" />
                             )}
 
-                            {/* Always-Visible Prominent PDF Action Card */}
-                            {m.role === 'assistant' && idx > 0 && m.content.includes('Official ZAR PDF') && (
+                            {/* Always-Visible Prominent PDF & WhatsApp Action Card */}
+                            {m.role === 'assistant' && idx > 0 && (m.content.includes('Official ZAR PDF') || m.content.includes('quotation') || m.content.includes('Quote')) && (
                               <div className="mt-3 pt-3 border-t border-border/80 flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
                                   <Sparkles className="h-3.5 w-3.5" />
                                   <span>Official ZAR Quotation Document Ready</span>
                                 </div>
-                                <button
-                                  onClick={() => generatePdfFromChatContent(m.content)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md transition-all cursor-pointer"
-                                >
-                                  <FileText className="h-3.5 w-3.5" />
-                                  <span>Download Official ZAR PDF Quote</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => generatePdfFromChatContent(m.content)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+                                  >
+                                    <FileText className="h-3.5 w-3.5" />
+                                    <span>Download ZAR PDF Quote</span>
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const phone = prompt('Enter customer WhatsApp phone number (e.g. +27689423316):')
+                                      if (!phone) return
+                                      toast.promise(
+                                        sendMessage(`Send this quotation to WhatsApp phone number ${phone}`),
+                                        {
+                                          loading: 'Dispatching WhatsApp Quote Agent...',
+                                          success: 'WhatsApp Quote Agent dispatched!',
+                                          error: 'Failed to send WhatsApp quote',
+                                        }
+                                      )
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                                  >
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                    <span>Send via WhatsApp</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -894,7 +936,7 @@ export default function CopilotChatPage() {
 
                 {/* Session Replay Stream Overlay Fallback */}
                 <div className="absolute bottom-2 left-2 right-2 opacity-90">
-                  <SessionReplay sessionId="592e82d0-5844-4bc6-a198-df22350d84fa" />
+                  <SessionReplay sessionId={activeSessionId || "592e82d0-5844-4bc6-a198-df22350d84fa"} />
                 </div>
               </div>
 

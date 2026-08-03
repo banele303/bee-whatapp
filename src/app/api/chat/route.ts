@@ -1,6 +1,11 @@
 import { streamText } from 'ai';
 import { deepseek } from '@ai-sdk/deepseek';
-import { searchInventoryTool, createQuoteTool, sourceOutOfStockPartTool } from '@/lib/ai/tools/parts-tools';
+import {
+  searchInventoryTool,
+  createQuoteTool,
+  sourceOutOfStockPartTool,
+  sendWhatsAppMessageTool,
+} from '@/lib/ai/tools/parts-tools';
 
 export const maxDuration = 30;
 
@@ -49,17 +54,20 @@ You have access to the following tools:
 1. **searchInventory**: Search the parts catalog by name, SKU, or vehicle fitment. Always search inventory first before quoting.
 2. **createQuote**: Create a formal ZAR quote with 15% VAT. Use after confirming parts availability.
 3. **sourceOutOfStock**: Find parts from external suppliers when out of stock.
+4. **sendWhatsAppMessage**: Send WhatsApp text message or quote notification directly to a customer phone number.
 
 When a customer asks about parts:
 1. First use searchInventory to check stock
 2. If found, present the results with prices
 3. If they want to buy, use createQuote to generate a formal quote
-4. If out of stock, use sourceOutOfStock to find external suppliers`,
+4. If out of stock, use sourceOutOfStock to find external suppliers
+5. If customer requests sending to WhatsApp, call sendWhatsAppMessage`,
       messages: formattedMessages,
       tools: {
         searchInventory: searchInventoryTool(accountId || '') as any,
-        createQuote: createQuoteTool(accountId || '', '') as any,
+        createQuote: createQuoteTool(accountId || '') as any,
         sourceOutOfStock: sourceOutOfStockPartTool as any,
+        sendWhatsAppMessage: sendWhatsAppMessageTool(accountId || '') as any,
       },
       // @ts-ignore
       maxSteps: 5,
