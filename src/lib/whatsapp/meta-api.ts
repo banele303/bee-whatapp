@@ -672,19 +672,56 @@ export async function deleteMessageTemplate(
   args: DeleteMessageTemplateArgs
 ): Promise<void> {
   const { wabaId, accessToken, name, metaTemplateId } = args
+
+  // Attempt 1: delete with hsm_id if available (scopes to single variant)
+  if (metaTemplateId) {
+    const params = new URLSearchParams({ name, hsm_id: metaTemplateId })
+    const url = `${META_API_BASE}/${wabaId}/message_templates?${params.toString()}`
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (response.ok || response.status === 404) return
+    let errMsg = ''
+    try {
+      const data = (await response.json()) as MetaErrorResponse
+      errMsg = data.error?.message ?? ''
+    } catch { /* ignore */ }
+
+    // If it was already deleted or parameter was invalid for hsm_id, fallback to name-only delete below
+    if (
+      errMsg.includes('does not exist') ||
+      errMsg.includes('Object with ID')
+    ) {
+      return
+    }
+  }
+
+  // Attempt 2: delete by template name
   const params = new URLSearchParams({ name })
-  if (metaTemplateId) params.set('hsm_id', metaTemplateId)
   const url = `${META_API_BASE}/${wabaId}/message_templates?${params.toString()}`
   const response = await fetch(url, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  // Treat a 404 as a no-op — the template is already gone on Meta's
-  // side, and we still want the local row removed.
-  if (response.status === 404) return
-  if (!response.ok) {
-    await throwMetaError(response, `Meta API error: ${response.status}`)
+  if (response.ok || response.status === 404) return
+
+  let errMsg = ''
+  try {
+    const data = (await response.json()) as MetaErrorResponse
+    errMsg = data.error?.message ?? ''
+  } catch { /* ignore */ }
+
+  // If Meta says the template is not found / does not exist / invalid parameter (e.g. already deleted on Meta), treat as no-op so local deletion succeeds
+  if (
+    errMsg.includes('does not exist') ||
+    errMsg.includes('Invalid parameter') ||
+    errMsg.includes('Object with ID')
+  ) {
+    return
   }
+
+  await throwMetaError(response, `Meta API error: ${response.status}`)
 }
 
 // ============================================================
