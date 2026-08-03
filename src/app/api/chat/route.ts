@@ -94,7 +94,8 @@ CRITICAL SOURCING & LINK RULES:
    - Alternator: ![Alternator 12V](https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=600&auto=format&fit=crop)
    - Oil/Fuel Filter: ![Filter Element](https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&auto=format&fit=crop)
 5. CURRENCY & VAT: Always display all prices in ZAR (Rands). Include 15% South African VAT in itemized pricing tables.
-6. QUOTATION DELIVERABLE: When generating a quote, present the clean itemized ZAR table with Subtotal, 15% VAT, and Total Amount, and state: "Here is your official quotation! Click the **Download ZAR PDF Quote** button below to generate your printable PDF or **Send via WhatsApp** to dispatch it instantly."`,
+6. TABLE NEWLINES: ALWAYS place a double newline (\n\n) BEFORE starting any markdown table and AFTER finishing a markdown table. NEVER attach table pipes '|' directly to heading text on the same line.
+7. QUOTATION DELIVERABLE: When generating a quote, present the clean itemized ZAR table with Subtotal, 15% VAT, and Total Amount, and state: "Here is your official quotation! Click the **Download ZAR PDF Quote** button below to generate your printable PDF or **Send via WhatsApp** to dispatch it instantly."`,
       messages: formattedMessages,
     });
 
