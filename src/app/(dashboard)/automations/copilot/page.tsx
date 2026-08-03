@@ -432,12 +432,16 @@ export default function CopilotChatPage() {
       let assistantMsg = { id: String(Date.now() + 1), role: 'assistant' as const, content: '' }
       setLocalMessages(prev => [...prev, assistantMsg])
 
+      let streamBuffer = ''
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const chunk = decoder.decode(value, { stream: true })
+        streamBuffer += decoder.decode(value, { stream: true })
 
-        const lines = chunk.split('\n')
+        const lines = streamBuffer.split('\n')
+        // Hold the last incomplete line in buffer
+        streamBuffer = lines.pop() || ''
+
         for (const line of lines) {
           if (!line.trim()) continue
           if (line.startsWith('0:')) {
@@ -447,8 +451,21 @@ export default function CopilotChatPage() {
               assistantMsg.content += line.slice(2)
             }
           } else if (!line.match(/^[0-9a-z]:/)) {
-            assistantMsg.content += line
+            assistantMsg.content += line + '\n'
           }
+        }
+        setLocalMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }])
+      }
+
+      if (streamBuffer.trim()) {
+        if (streamBuffer.startsWith('0:')) {
+          try {
+            assistantMsg.content += JSON.parse(streamBuffer.slice(2))
+          } catch {
+            assistantMsg.content += streamBuffer.slice(2)
+          }
+        } else if (!streamBuffer.match(/^[0-9a-z]:/)) {
+          assistantMsg.content += streamBuffer
         }
         setLocalMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }])
       }
