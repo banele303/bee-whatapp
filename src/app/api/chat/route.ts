@@ -98,7 +98,10 @@ CRITICAL SOURCING & LINK RULES:
       messages: formattedMessages,
     });
 
-    return result.toDataStreamResponse();
+    if (typeof (result as any).toDataStreamResponse === 'function') {
+      return (result as any).toDataStreamResponse();
+    }
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error('[API /api/chat Error]:', error);
     return new Response(
