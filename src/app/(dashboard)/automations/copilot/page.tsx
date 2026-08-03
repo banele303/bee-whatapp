@@ -337,6 +337,21 @@ function generatePdfFromChatContent(content: string) {
 
 import { SessionReplay } from '@/features/workflows/components/session-replay'
 
+interface CustomSource {
+  id: string;
+  label: string;
+  url: string;
+  isCustom?: boolean;
+}
+
+const DEFAULT_SOURCES: CustomSource[] = [
+  { id: 'facebook', label: 'Facebook Marketplace SA', url: 'https://facebook.com/marketplace' },
+  { id: 'goldwagen', label: 'Goldwagen', url: 'https://goldwagen.com' },
+  { id: 'masterparts', label: 'Masterparts', url: 'https://masterparts.com' },
+  { id: 'midas', label: 'Midas SA', url: 'https://midas.co.za' },
+  { id: 'toyota', label: 'Toyota SA', url: 'https://toyota.co.za' },
+]
+
 export default function CopilotChatPage() {
   const router = useRouter()
   const [localMessages, setLocalMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([
@@ -350,13 +365,70 @@ export default function CopilotChatPage() {
   const [targetUrl, setTargetUrl] = useState('')
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [showInspector, setShowInspector] = useState(false)
+  const [sources, setSources] = useState<CustomSource[]>(DEFAULT_SOURCES)
   const [selectedSources, setSelectedSources] = useState<string[]>(['facebook', 'goldwagen', 'masterparts'])
+  const [showAddSourceModal, setShowAddSourceModal] = useState(false)
+  const [newSourceName, setNewSourceName] = useState('')
+  const [newSourceUrl, setNewSourceUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [recentQuotes, setRecentQuotes] = useState<any[]>([])
   const [accountId, setAccountId] = useState<string | null>(null)
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    try {
+      const savedSources = localStorage.getItem('wacrm_copilot_custom_sources')
+      if (savedSources) {
+        const parsed = JSON.parse(savedSources)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSources(parsed)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load custom sources:', e)
+    }
+  }, [])
+
+  const handleAddCustomSource = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newSourceName.trim() || !newSourceUrl.trim()) return
+
+    const newSource: CustomSource = {
+      id: `custom-${Date.now()}`,
+      label: newSourceName.trim(),
+      url: newSourceUrl.trim(),
+      isCustom: true,
+    }
+
+    const updated = [...sources, newSource]
+    setSources(updated)
+    setSelectedSources(prev => [...prev, newSource.id])
+    try {
+      localStorage.setItem('wacrm_copilot_custom_sources', JSON.stringify(updated))
+    } catch (e) {
+      console.error('Failed to save custom sources:', e)
+    }
+
+    setNewSourceName('')
+    setNewSourceUrl('')
+    setShowAddSourceModal(false)
+    toast.success(`Added ${newSource.label} to Search Sources!`)
+  }
+
+  const handleDeleteCustomSource = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const updated = sources.filter(s => s.id !== id)
+    setSources(updated)
+    setSelectedSources(prev => prev.filter(sId => sId !== id))
+    try {
+      localStorage.setItem('wacrm_copilot_custom_sources', JSON.stringify(updated))
+    } catch (e) {
+      console.error('Failed to save custom sources:', e)
+    }
+    toast.success('Custom source removed')
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -703,37 +775,50 @@ export default function CopilotChatPage() {
           
           {/* Top Bar: Source Filters & Live Agent Inspector Toggle */}
           <div className="px-6 py-3 border-b border-border bg-card flex flex-wrap items-center justify-between gap-3 shrink-0 z-10 shadow-xs">
-            <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-              <span className="text-xs font-semibold text-muted-foreground mr-1">Search Sources:</span>
-              {[
-                { id: 'facebook', label: 'Facebook Marketplace SA' },
-                { id: 'goldwagen', label: 'Goldwagen' },
-                { id: 'masterparts', label: 'Masterparts' },
-                { id: 'midas', label: 'Midas SA' },
-                { id: 'toyota', label: 'Toyota SA' },
-              ].map((source) => {
+            <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none flex-1 min-w-0">
+              <span className="text-xs font-semibold text-muted-foreground mr-1 shrink-0">Search Sources:</span>
+              {sources.map((source) => {
                 const isSelected = selectedSources.includes(source.id);
                 return (
-                  <button
+                  <div
                     key={source.id}
-                    type="button"
                     onClick={() => {
                       setSelectedSources(prev =>
                         isSelected ? prev.filter(s => s !== source.id) : [...prev, source.id]
                       );
                     }}
                     className={cn(
-                      "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer border",
+                      "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer border shrink-0 group relative",
                       isSelected
                         ? "bg-orange-500/10 border-orange-500/40 text-orange-600 dark:text-orange-400 font-semibold"
                         : "bg-muted border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-foreground"
                     )}
                   >
                     <span>{isSelected ? "✓" : "+"}</span>
-                    <span>{source.label}</span>
-                  </button>
+                    <span title={source.url}>{source.label}</span>
+
+                    {source.isCustom && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteCustomSource(source.id, e)}
+                        title="Delete custom source"
+                        className="ml-1 px-1 rounded-full hover:bg-red-500/20 hover:text-red-500 transition-colors text-[10px] font-bold cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={() => setShowAddSourceModal(prev => !prev)}
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Add Target URL / Facebook Group</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -764,6 +849,39 @@ export default function CopilotChatPage() {
               </Button>
             </div>
           </div>
+
+          {/* Add Custom Source Input Drawer */}
+          {showAddSourceModal && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-6 py-2 bg-card/95 border-b border-border z-10 shrink-0">
+              <form onSubmit={handleAddCustomSource} className="max-w-4xl mx-auto flex flex-wrap items-center gap-2">
+                <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 shrink-0">
+                  <LinkIcon className="h-3.5 w-3.5" />
+                  <span>Add Target Source / Group:</span>
+                </div>
+                <Input
+                  value={newSourceName}
+                  onChange={(e) => setNewSourceName(e.target.value)}
+                  placeholder="Title (e.g. Hilux SA Facebook Group)"
+                  className="h-8 text-xs bg-background rounded-lg border-border w-56 shadow-xs"
+                  required
+                />
+                <Input
+                  value={newSourceUrl}
+                  onChange={(e) => setNewSourceUrl(e.target.value)}
+                  placeholder="Target URL (e.g. https://facebook.com/groups/toyotahiluxsa)"
+                  className="h-8 text-xs bg-background rounded-lg border-border flex-1 min-w-[220px] shadow-xs"
+                  required
+                />
+                <Button type="submit" size="sm" className="h-8 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-lg shadow-md cursor-pointer">
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  <span>Save Source</span>
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddSourceModal(false)} className="h-8 text-xs cursor-pointer">
+                  Cancel
+                </Button>
+              </form>
+            </motion.div>
+          )}
 
           <div className="flex-1 flex min-h-0 relative">
             {/* Messages Feed */}
