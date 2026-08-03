@@ -87,7 +87,7 @@ CRITICAL SOURCING & LINK RULES:
    - Goldwagen SA: [View Catalog on Goldwagen SA](https://www.goldwagen.com/search?q=...)
    - Masterparts SA: [View Catalog on Masterparts SA](https://www.masterparts.com/?s=...)
    - Midas SA: [View Catalog on Midas SA](https://www.midas.co.za/)
-5. REAL PART PHOTOS: Only render image markdown tags ![Part Image](imageUrl) if a real scraped imageUrl exists in [Live System Sourcing Data]. Do NOT output generic demo stock photos if no image is available.
+5. REAL PART PHOTOS: Use ONLY the imageUrl values returned in [Live System Sourcing Data]. For each supplier that has a non-empty imageUrl, display the image ABOVE the sourcing table using: ![Part - SupplierName](imageUrl). If imageUrl is empty or missing for a supplier, skip that image — do NOT use stock photos or placeholder images.
 6. CURRENCY & VAT: Always display all prices in ZAR (Rands). Include 15% South African VAT in itemized pricing tables.
 7. TABLE NEWLINES: ALWAYS place a double newline (\n\n) BEFORE starting any markdown table and AFTER finishing a markdown table. NEVER attach table pipes '|' directly to heading text on the same line.
 8. NO HTML TAGS: NEVER output raw HTML line break tags like <br> or <br/>. Always use standard markdown paragraph breaks and double newlines.
