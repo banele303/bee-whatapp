@@ -114,11 +114,7 @@ export default function NewBroadcastPage() {
       },
       status: 'draft',
       total_recipients: 0,
-      sent_count: 0,
-      delivered_count: 0,
-      read_count: 0,
-      replied_count: 0,
-      failed_count: 0,
+      // Count columns intentionally omitted — owned by DB trigger (migrations 003/005).
     });
 
     if (error) {

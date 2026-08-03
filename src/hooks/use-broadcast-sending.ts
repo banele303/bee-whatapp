@@ -370,11 +370,12 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
           },
           status: 'sending',
           total_recipients: contacts.length,
-          sent_count: 0,
-          delivered_count: 0,
-          read_count: 0,
-          replied_count: 0,
-          failed_count: 0,
+          // NOTE: sent_count / delivered_count / read_count /
+          // replied_count / failed_count are intentionally omitted.
+          // They are owned by the DB aggregate trigger (migrations
+          // 003/005) and seeding them here would be immediately
+          // overwritten — worse, it races the trigger and can cause
+          // a constraint violation on some Postgres versions.
         })
         .select()
         .single();
@@ -557,12 +558,11 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
       // ── Step 5: Finalize status ───────────────────────────────────
       // Aggregate counts are maintained by the DB trigger (migration
       // 003); we only flip the final status here.
+      // NOTE: 'partial' is NOT in the DB CHECK constraint
+      // (migration 001 only allows draft/scheduled/sending/sent/failed).
+      // Use 'sent' for partial success — failed_count shows the detail.
       setProgress(95);
-      const finalStatus = failedCount === totalRecipients
-        ? 'failed'
-        : failedCount > 0
-          ? 'partial'
-          : 'sent';
+      const finalStatus = failedCount === totalRecipients ? 'failed' : 'sent';
       await supabase
         .from('broadcasts')
         .update({ status: finalStatus })

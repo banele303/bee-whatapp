@@ -203,6 +203,7 @@ export async function createBroadcast(
       template_language: templateLanguage,
       status: 'sending',
       total_recipients: deduped.length,
+      // Count columns intentionally omitted — owned by DB trigger (migrations 003/005).
     })
     .select('id')
     .single();
@@ -315,16 +316,13 @@ export async function deliverBroadcast(
   }
 
   // Terminal status only — counts are trigger-owned (see the note
-  // above). If nothing sent, the broadcast failed outright; a partial
-  // send is still 'sent' (per-recipient failures show in failed_count).
+  // above). 'partial' is NOT in the DB CHECK constraint (migration 001
+  // allows only draft/scheduled/sending/sent/failed) — use 'sent' for
+  // partial success; failed_count exposes the breakdown.
   await db
     .from('broadcasts')
     .update({
-      status: sentCount === 0
-        ? 'failed'
-        : sentCount < plan.planned.length
-          ? 'partial'
-          : 'sent',
+      status: sentCount === 0 ? 'failed' : 'sent',
       updated_at: new Date().toISOString(),
     })
     .eq('id', plan.broadcastId);
