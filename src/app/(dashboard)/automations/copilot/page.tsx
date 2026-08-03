@@ -616,6 +616,28 @@ export default function CopilotChatPage() {
     sendMessage(text)
   }
 
+  const handleSelectSourcingPreset = () => {
+    setLocalMessages(prev => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        role: 'assistant',
+        content: '🔍 **DeepSeek v3 Auto-Sourcing Active**\n\nWhat vehicle part or supplier catalog item would you like to search today? Please type the part name, vehicle make, model, or year below (e.g., *Toyota Hilux brake pads* or *Ford Ranger radiator*).'
+      }
+    ])
+  }
+
+  const handleSelectQuotePreset = () => {
+    setLocalMessages(prev => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        role: 'assistant',
+        content: '⚡ **Smart Quote Builder Active**\n\nWhich parts or products would you like to build an official ZAR quotation for? Type the items, quantities, and customer details below.'
+      }
+    ])
+  }
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     sendMessage(inputVal)
@@ -646,7 +668,7 @@ export default function CopilotChatPage() {
                 <div className="space-y-1">
                   <Button
                     variant="ghost"
-                    onClick={() => handlePromptClick('Source out of stock Toyota Fortuner headlight across SA suppliers and Facebook Marketplace')}
+                    onClick={handleSelectSourcingPreset}
                     className="w-full justify-start text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all rounded-xl p-3 h-auto cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mr-3 shrink-0">
@@ -660,7 +682,7 @@ export default function CopilotChatPage() {
 
                   <Button
                     variant="ghost"
-                    onClick={() => handlePromptClick('Generate a formal ZAR quotation for 2021 Toyota Hilux brake pads with 15% VAT')}
+                    onClick={handleSelectQuotePreset}
                     className="w-full justify-start text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all rounded-xl p-3 h-auto cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mr-3 shrink-0">
@@ -898,7 +920,7 @@ export default function CopilotChatPage() {
                 >
                   <Card
                     className="bg-card/60 border-border/80 hover:bg-muted/50 hover:border-emerald-500/40 transition-all cursor-pointer group"
-                    onClick={() => handlePromptClick('Find a 2021 Toyota Hilux 2.8 GD-6 Brake Pad set in stock across SA suppliers')}
+                    onClick={handleSelectSourcingPreset}
                   >
                     <CardContent className="p-4 flex gap-3 items-start">
                       <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform">
@@ -906,14 +928,14 @@ export default function CopilotChatPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-xs text-foreground/90 mb-0.5">Source SA Supplier Part</h3>
-                        <p className="text-[11px] text-muted-foreground/80">Search Goldwagen & Masterparts for Hilux brake pads (ZAR)</p>
+                        <p className="text-[11px] text-muted-foreground/80">Search Goldwagen, Masterparts & Facebook Marketplace for any part</p>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card
                     className="bg-card/60 border-border/80 hover:bg-muted/50 hover:border-purple-500/40 transition-all cursor-pointer group"
-                    onClick={() => handlePromptClick('Create a formal ZAR quotation for 2 Silverton Radiators SKU-1092 with 15% VAT')}
+                    onClick={handleSelectQuotePreset}
                   >
                     <CardContent className="p-4 flex gap-3 items-start">
                       <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg group-hover:scale-110 transition-transform">
@@ -921,7 +943,7 @@ export default function CopilotChatPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-xs text-foreground/90 mb-0.5">Generate ZAR Quote</h3>
-                        <p className="text-[11px] text-muted-foreground/80">Build a ZAR quote in Rands with 15% SA VAT & core deposit</p>
+                        <p className="text-[11px] text-muted-foreground/80">Build a ZAR quote in Rands with 15% SA VAT & instant PDF</p>
                       </div>
                     </CardContent>
                   </Card>
