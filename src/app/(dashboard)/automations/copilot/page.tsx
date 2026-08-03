@@ -89,7 +89,13 @@ function FormattedMarkdown({ content }: { content: string }) {
         );
       }
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+        const boldText = part.slice(2, -2);
+        const isPrice = /R\s?[\d,]+(\.\d{2})?/.test(boldText);
+        return (
+          <strong key={i} className={cn("font-bold", isPrice ? "text-emerald-400" : "text-foreground")}>
+            {boldText}
+          </strong>
+        );
       }
       return part;
     });
@@ -98,20 +104,24 @@ function FormattedMarkdown({ content }: { content: string }) {
   const flushTable = (keyIndex: number) => {
     if (tableHeader.length > 0) {
       elements.push(
-        <div key={`table-${keyIndex}`} className="my-3 overflow-x-auto rounded-lg border border-border bg-background/80 backdrop-blur-md p-1">
+        <div key={`table-${keyIndex}`} className="my-4 overflow-x-auto rounded-xl border border-border/80 bg-card/90 backdrop-blur-md shadow-lg p-1">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="border-b border-border bg-card/80">
+              <tr className="border-b border-border/80 bg-muted/80">
                 {tableHeader.map((h, i) => (
-                  <th key={i} className="p-2.5 font-semibold text-foreground/90">{formatLine(h)}</th>
+                  <th key={i} className="p-3 font-bold uppercase tracking-wider text-[11px] text-foreground">
+                    {formatLine(h)}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {tableRows.map((row, ri) => (
-                <tr key={ri} className="border-b border-border/60 last:border-0 hover:bg-card/40">
+                <tr key={ri} className="border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors">
                   {row.map((cell, ci) => (
-                    <td key={ci} className="p-2.5 text-muted-foreground">{formatLine(cell)}</td>
+                    <td key={ci} className="p-3 text-muted-foreground leading-normal">
+                      {formatLine(cell)}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -128,8 +138,9 @@ function FormattedMarkdown({ content }: { content: string }) {
   lines.forEach((line, index) => {
     const trimmed = line.trim();
 
-    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+    if (trimmed.startsWith('|')) {
       const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
+      // Skip markdown separator line e.g. | :--- | :--- |
       if (cells.every(c => c.replace(/[-:]/g, '') === '')) {
         return;
       }
@@ -147,24 +158,36 @@ function FormattedMarkdown({ content }: { content: string }) {
 
     if (trimmed.startsWith('# ')) {
       elements.push(
-        <h1 key={index} className="text-base font-bold text-foreground my-2">
+        <h1 key={index} className="text-base font-bold text-foreground my-3 pb-1 border-b border-border/60">
           {formatLine(trimmed.slice(2))}
         </h1>
       );
     } else if (trimmed.startsWith('## ')) {
       elements.push(
-        <h2 key={index} className="text-sm font-bold text-foreground my-1.5">
+        <h2 key={index} className="text-sm font-bold text-foreground my-2.5">
           {formatLine(trimmed.slice(3))}
         </h2>
       );
     } else if (trimmed.startsWith('### ')) {
       elements.push(
-        <h3 key={index} className="text-xs font-bold text-foreground/90 my-1">
+        <h3 key={index} className="text-xs font-bold text-emerald-400 my-2 uppercase tracking-wide">
           {formatLine(trimmed.slice(4))}
         </h3>
       );
+    } else if (trimmed.startsWith('#### ')) {
+      elements.push(
+        <h4 key={index} className="text-xs font-bold text-foreground/90 my-1.5">
+          {formatLine(trimmed.slice(5))}
+        </h4>
+      );
     } else if (trimmed === '---' || trimmed === '***') {
-      elements.push(<hr key={index} className="my-3 border-border" />);
+      elements.push(<hr key={index} className="my-3 border-t border-border/60" />);
+    } else if (trimmed.startsWith('> ')) {
+      elements.push(
+        <blockquote key={index} className="my-2 p-3 border-l-4 border-emerald-500 bg-emerald-500/10 rounded-r-xl text-xs font-medium text-foreground">
+          {formatLine(trimmed.slice(2))}
+        </blockquote>
+      );
     } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       elements.push(
         <li key={index} className="ml-4 list-disc text-foreground/90 my-0.5">
@@ -806,54 +829,6 @@ export default function CopilotChatPage() {
                 })}
               </AnimatePresence>
 
-              {/* Live Step-by-Step Agent Progress Timeline */}
-              {isLoading && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3.5">
-                  <Avatar className="h-8 w-8 border border-emerald-500/40">
-                    <AvatarFallback className="bg-emerald-950 text-emerald-400 font-bold text-xs">
-                      AI
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="bg-card/95 backdrop-blur-md border border-border rounded-2xl rounded-tl-xs p-4 space-y-3 w-full max-w-md shadow-xl">
-                    <div className="flex items-center justify-between border-b border-border pb-2">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-emerald-400 animate-pulse" />
-                        <span className="text-xs font-semibold text-foreground">Stagehand Agent Active</span>
-                      </div>
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px] animate-pulse">
-                        Executing Workflow
-                      </Badge>
-                    </div>
-
-                    {/* Step-by-Step Progress Timeline */}
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center gap-2 text-emerald-400 font-medium">
-                        <div className="h-4 w-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">✓</div>
-                        <span>Step 1: Initializing Stagehand Browser session</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-emerald-300 font-medium">
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-400 shrink-0" />
-                        <span>Step 2: Searching supplier catalogs & fitments</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-muted-foreground/60 font-medium pl-6">
-                        <span>Step 3: Extracting price, stock & SKU data</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-muted-foreground/60 font-medium pl-6">
-                        <span>Step 4: Compiling quote response</span>
-                      </div>
-                    </div>
-
-                    {/* Mini Console Activity Log */}
-                    <div className="rounded-lg bg-background/80 backdrop-blur-md p-2.5 font-mono text-[10px] text-muted-foreground/80 border border-border/80 space-y-1">
-                      <div className="text-emerald-400">[00:01.2] Connected to Browserbase Session (ID: 592e82d0)</div>
-                      <div className="text-muted-foreground">[00:02.5] Evaluating catalog search query...</div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
               <div ref={messagesEndRef} className="h-2" />
             </div>
           </ScrollArea>
