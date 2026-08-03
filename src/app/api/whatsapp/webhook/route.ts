@@ -354,7 +354,29 @@ async function handleStatusUpdate(status: {
   status: string
   timestamp: string
   recipient_id: string
+  errors?: Array<{
+    code: number
+    title: string
+    message?: string
+    error_data?: { details?: string }
+  }>
 }) {
+  let errorDetails = ''
+  if (status.status === 'failed') {
+    errorDetails =
+      status.errors
+        ?.map(
+          (e) =>
+            `[${e.code}] ${e.title}${e.message ? ': ' + e.message : ''}${
+              e.error_data?.details ? ' (' + e.error_data.details + ')' : ''
+            }`,
+        )
+        .join(' | ') || 'Meta delivery failed'
+    console.error(
+      `[WEBHOOK STATUS FAILED] message_id: ${status.id} recipient: ${status.recipient_id} details: ${errorDetails}`,
+    )
+  }
+
   // 1) Mirror onto messages (legacy behavior) — Meta's status values
   //    already match the CHECK constraint on messages.status. No
   //    `.select()`: message_id is NOT unique (migration 009 — Meta ids
@@ -397,6 +419,7 @@ async function handleStatusUpdate(status: {
     if (status.status === 'sent' && !('sent_at' in update)) update.sent_at = tsIso
     if (status.status === 'delivered') update.delivered_at = tsIso
     if (status.status === 'read') update.read_at = tsIso
+    if (status.status === 'failed' && errorDetails) update.error_message = errorDetails
 
     const { error: recUpdateErr } = await supabaseAdmin()
       .from('broadcast_recipients')
