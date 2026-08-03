@@ -59,6 +59,8 @@ interface NewRecipient {
 }
 
 export async function POST(request: Request) {
+  const reqId = Math.random().toString(36).slice(2, 8).toUpperCase()
+  console.log(`[BROADCAST:${reqId}] ── POST /api/whatsapp/broadcast ──────────────────`)
   try {
     const supabase = await createClient()
 
@@ -68,8 +70,10 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
+      console.error(`[BROADCAST:${reqId}] FAIL auth — authError:`, authError?.message ?? 'no user session')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    console.log(`[BROADCAST:${reqId}] STEP 1 auth OK — user: ${user.id}`)
 
     // Per-user broadcast budget. Note: this limits how often a user
     // can *start* a campaign, not how many messages go out inside
@@ -90,11 +94,13 @@ export async function POST(request: Request) {
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
+      console.error(`[BROADCAST:${reqId}] FAIL account — no account_id on profile for user ${user.id}`)
       return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
     }
+    console.log(`[BROADCAST:${reqId}] STEP 2 account OK — accountId: ${accountId}`)
 
     const body = await request.json()
     const {
@@ -104,6 +110,8 @@ export async function POST(request: Request) {
       template_language,
       template_params,
     } = body
+
+    console.log(`[BROADCAST:${reqId}] STEP 3 payload — template: "${template_name}" lang: "${template_language}" newRecipients: ${Array.isArray(newRecipients) ? newRecipients.length : 'none'} phone_numbers: ${Array.isArray(phone_numbers) ? phone_numbers.length : 'none'}`)
 
     // Normalize to a list of {phone, params} regardless of shape.
     let recipients: NewRecipient[]
@@ -118,6 +126,7 @@ export async function POST(request: Request) {
         params: shared,
       }))
     } else {
+      console.error(`[BROADCAST:${reqId}] FAIL payload — no recipients or phone_numbers provided`)
       return NextResponse.json(
         {
           error:
@@ -128,11 +137,13 @@ export async function POST(request: Request) {
     }
 
     if (!template_name) {
+      console.error(`[BROADCAST:${reqId}] FAIL payload — template_name missing`)
       return NextResponse.json(
         { error: 'template_name is required' },
         { status: 400 }
       )
     }
+    console.log(`[BROADCAST:${reqId}] STEP 3 OK — ${recipients.length} recipient(s), template: "${template_name}"`)
 
     const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
@@ -141,6 +152,7 @@ export async function POST(request: Request) {
       .single()
 
     if (configError || !config) {
+      console.error(`[BROADCAST:${reqId}] FAIL whatsapp_config — configError: ${configError?.message ?? 'no config row found'} for account ${accountId}`)
       return NextResponse.json(
         {
           error:
@@ -149,6 +161,7 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+    console.log(`[BROADCAST:${reqId}] STEP 4 config OK — phone_number_id: ${config.phone_number_id} waba_id: ${config.waba_id ?? 'NOT SET'}`)
 
     const accessToken = decrypt(config.access_token)
 
@@ -157,14 +170,25 @@ export async function POST(request: Request) {
     // the loop would N+1 against Supabase for every recipient.
     // Guard against a malformed local row crashing every send in
     // the loop with the same opaque TypeError — fail loudly once.
-    const { data: rawTemplateRow } = await supabase
+    const templateLang = template_language || 'en_US'
+    console.log(`[BROADCAST:${reqId}] STEP 5 looking up template — name: "${template_name}" language: "${templateLang}" account_id: ${accountId}`)
+    const { data: rawTemplateRow, error: templateLookupError } = await supabase
       .from('message_templates')
       .select('*')
       .eq('account_id', accountId)
       .eq('name', template_name)
-      .eq('language', template_language || 'en_US')
+      .eq('language', templateLang)
       .maybeSingle()
+    if (templateLookupError) {
+      console.error(`[BROADCAST:${reqId}] FAIL template lookup DB error — ${templateLookupError.message}`)
+    }
+    if (!rawTemplateRow) {
+      console.warn(`[BROADCAST:${reqId}] WARN template not found locally — name: "${template_name}" lang: "${templateLang}" account: ${accountId}. Will attempt Meta send without local row (no header/button components).`)
+    } else {
+      console.log(`[BROADCAST:${reqId}] STEP 5 template found — id: ${rawTemplateRow.id} status: ${rawTemplateRow.status} header_type: ${rawTemplateRow.header_type ?? 'none'} buttons: ${rawTemplateRow.buttons ? JSON.stringify(rawTemplateRow.buttons).slice(0, 80) : 'none'}`)
+    }
     if (rawTemplateRow && !isMessageTemplate(rawTemplateRow)) {
+      console.error(`[BROADCAST:${reqId}] FAIL template malformed — row failed isMessageTemplate guard. Row keys: ${Object.keys(rawTemplateRow).join(', ')}`)
       return NextResponse.json(
         {
           error:
@@ -198,6 +222,7 @@ export async function POST(request: Request) {
       let sentMessageId: string | null = null
       let lastError: string | null = null
 
+      console.log(`[BROADCAST:${reqId}] Sending to phone: ${recipient.phone} → sanitized: ${sanitized} variants: [${variants.join(', ')}] params: ${JSON.stringify(recipient.params ?? [])}`)
       for (const variant of variants) {
         try {
           const result = await sendTemplateMessage({
@@ -212,10 +237,12 @@ export async function POST(request: Request) {
           })
           sentMessageId = result.messageId
           lastError = null
+          console.log(`[BROADCAST:${reqId}] ✓ Sent to ${variant} — messageId: ${sentMessageId}`)
           break
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error'
+          console.error(`[BROADCAST:${reqId}] ✗ FAILED to send to ${variant} — error: ${errorMessage}`)
           if (!isRecipientNotAllowedError(errorMessage)) {
             lastError = errorMessage
             break
@@ -246,6 +273,7 @@ export async function POST(request: Request) {
       }
     }
 
+    console.log(`[BROADCAST:${reqId}] ── DONE — total: ${recipients.length} sent: ${sentCount} failed: ${failedCount} ─────────────────`)
     return NextResponse.json({
       success: true,
       total: recipients.length,
@@ -254,7 +282,7 @@ export async function POST(request: Request) {
       results,
     })
   } catch (error) {
-    console.error('Error in WhatsApp broadcast POST:', error)
+    console.error(`[BROADCAST:${reqId}] UNHANDLED ERROR:`, error)
     return NextResponse.json(
       { error: 'Failed to process broadcast' },
       { status: 500 }

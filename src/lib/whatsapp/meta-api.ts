@@ -436,10 +436,38 @@ export async function sendTemplateMessage(
     },
     body: JSON.stringify(body),
   })
-  if (!response.ok) {
-    await throwMetaError(response, `Meta API error: ${response.status}`)
+
+  // Log the outgoing payload and the Meta response for every template send.
+  // Remove or gate behind a flag once the bug is found.
+  const bodyForLog = JSON.parse(JSON.stringify(body))
+  if (bodyForLog?.template?.language?.code) {
+    // keep it readable
   }
+  console.log(
+    '[META sendTemplate] → payload:',
+    JSON.stringify(bodyForLog, null, 2).slice(0, 1500),
+  )
+
+  if (!response.ok) {
+    let rawBody = ''
+    try { rawBody = await response.text() } catch { /* ignore */ }
+    console.error(
+      `[META sendTemplate] ✗ Meta responded ${response.status} ${response.statusText}:`,
+      rawBody.slice(0, 500),
+    )
+    // Re-parse for the normal error throw path
+    let metaErrMsg = `Meta API error: ${response.status}`
+    try {
+      const errData = JSON.parse(rawBody) as MetaErrorResponse
+      if (errData.error?.message) metaErrMsg = errData.error.message
+    } catch { /* keep fallback */ }
+    throw new Error(metaErrMsg)
+  }
+
   const data = await response.json()
+  console.log(
+    `[META sendTemplate] ✓ Meta responded 200, messageId: ${data?.messages?.[0]?.id ?? 'MISSING'}`,
+  )
   return { messageId: data.messages[0].id }
 }
 
