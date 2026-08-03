@@ -74,8 +74,8 @@ function FormattedMarkdown({ content }: { content: string }) {
       );
     }
 
-    // Replace links [label](url) and **bold**
-    const parts = text.split(/(\[.*?\]\(.*?\)\s*|\*\*.*?\*\*)/g);
+    // Replace links [label](url), `code`, and **bold**
+    const parts = text.split(/(\[.*?\]\(.*?\)\s*|`.*?`|\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
       const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
       if (linkMatch) {
@@ -89,6 +89,13 @@ function FormattedMarkdown({ content }: { content: string }) {
           >
             {linkMatch[1]}
           </a>
+        );
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code key={i} className="px-1.5 py-0.5 mx-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[11px]">
+            {part.slice(1, -1)}
+          </code>
         );
       }
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -622,7 +629,21 @@ export default function CopilotChatPage() {
       {
         id: String(Date.now()),
         role: 'assistant',
-        content: '🔍 **DeepSeek v3 Auto-Sourcing Active**\n\nWhat vehicle part or supplier catalog item would you like to search today? Please type the part name, vehicle make, model, or year below (e.g., *Toyota Hilux brake pads* or *Ford Ranger radiator*).'
+        content: `### 🔍 DeepSeek v3 Auto-Sourcing Active
+
+What vehicle part or supplier catalog item would you like to search today?
+
+---
+
+#### 💡 How to search:
+Type the **part name, vehicle make, model, or year** below in the chat box.
+
+**Search Examples:**
+- \`Toyota Hilux 2.8 GD-6 Front Brake Pads\`
+- \`2022 Ford Ranger 3.2 Radiator Assembly\`
+- \`Golf 7 GTI Alternator 12V\`
+
+*I will check local workshop inventory and live South African supplier catalogs immediately!*`
       }
     ])
   }
@@ -633,7 +654,20 @@ export default function CopilotChatPage() {
       {
         id: String(Date.now()),
         role: 'assistant',
-        content: '⚡ **Smart Quote Builder Active**\n\nWhich parts or products would you like to build an official ZAR quotation for? Type the items, quantities, and customer details below.'
+        content: `### ⚡ Smart Quote Builder Active
+
+Which parts or products would you like to build an official ZAR quotation for?
+
+---
+
+#### 💡 How to build a quote:
+Type the **part items, quantities, and customer details** below.
+
+**Quote Examples:**
+- \`Quote 2x 2021 Toyota Hilux Brake Pads for Customer John Doe\`
+- \`Generate ZAR quote for 1x Silverton Radiators SKU-1092 with 15% VAT\`
+
+*I will calculate VAT, total pricing, generate a downloadable PDF, and enable 1-click WhatsApp dispatch!*`
       }
     ])
   }
