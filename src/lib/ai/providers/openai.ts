@@ -24,37 +24,66 @@ export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult
       apiKey,
     })
 
-    // Convert messages to Vercel AI SDK format
-    const sdkMessages = mergeConsecutive(messages).map(m => ({
+    let sdkMessages: any[] = mergeConsecutive(messages).map(m => ({
       role: m.role,
       content: m.content,
     }))
 
-    const { text, usage, finishReason } = await generateText({
-      model: openai(model),
-      system: systemPrompt,
-      messages: sdkMessages,
-      maxSteps: 5,
-      tools: {
-        searchInventory: searchInventoryTool(accountId || '') as any,
-        createQuote: createQuoteTool(accountId || '', contactId || '') as any,
-        sourceOutOfStock: sourceOutOfStockPartTool as any
-      }
-    })
+    const tools = {
+      searchInventory: searchInventoryTool(accountId || '') as any,
+      createQuote: createQuoteTool(accountId || '', contactId || '') as any,
+      sourceOutOfStock: sourceOutOfStockPartTool as any
+    }
 
-    if (!text || typeof text !== 'string' || !text.trim()) {
+    let finalResponseText = ''
+    let totalUsage = { prompt: 0, completion: 0, total: 0 }
+
+    for (let i = 0; i < 5; i++) {
+      const response = await generateText({
+        model: openai(model),
+        system: systemPrompt,
+        messages: sdkMessages,
+        tools
+      })
+
+      if (response.usage) {
+        totalUsage.prompt += (response.usage as any).promptTokens || 0
+        totalUsage.completion += (response.usage as any).completionTokens || 0
+        totalUsage.total += (response.usage as any).totalTokens || 0
+      }
+
+      if (response.toolCalls && response.toolCalls.length > 0) {
+        sdkMessages.push({
+          role: 'assistant',
+          content: response.text || '',
+          toolCalls: response.toolCalls
+        })
+
+        if (response.toolResults && response.toolResults.length > 0) {
+          sdkMessages.push({
+            role: 'tool',
+            content: response.toolResults
+          })
+        }
+      } else {
+        finalResponseText = response.text || ''
+        break
+      }
+    }
+
+    if (!finalResponseText || typeof finalResponseText !== 'string' || !finalResponseText.trim()) {
       throw new AiError('OpenAI returned an empty response.', {
         code: 'empty_response',
       })
     }
     
     const normalizedUsage = normalizeUsage({
-      prompt: (usage as any)?.promptTokens,
-      completion: (usage as any)?.completionTokens,
-      total: (usage as any)?.totalTokens,
+      prompt: totalUsage.prompt,
+      completion: totalUsage.completion,
+      total: totalUsage.total,
     })
     
-    return { text, usage: normalizedUsage }
+    return { text: finalResponseText, usage: normalizedUsage }
   } catch (err: any) {
     console.error('OpenAI generation error:', err)
     if (err instanceof AiError) throw err
