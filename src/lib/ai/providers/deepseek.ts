@@ -67,7 +67,7 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
               type: 'tool-call',
               toolCallId: tc.toolCallId,
               toolName: tc.toolName,
-              args: tc.args
+              args: tc.args !== undefined ? tc.args : {}
             }))
           ]
         })
@@ -79,7 +79,7 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
               type: 'tool-result',
               toolCallId: tr.toolCallId,
               toolName: tr.toolName,
-              result: tr.result
+              result: tr.result !== undefined ? tr.result : null
             }))
           })
         }
