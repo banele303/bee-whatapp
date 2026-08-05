@@ -58,6 +58,8 @@ export function parseGeneration(
   usage: AiUsage | null = null,
 ): GenerateResult {
   const handoff = raw.includes(HANDOFF_SENTINEL)
-  const text = raw.split(HANDOFF_SENTINEL).join('').trim()
+  let text = raw.split(HANDOFF_SENTINEL).join('').trim()
+  // Clean up double-asterisks (**) into single-asterisk (*) for WhatsApp bold syntax
+  text = text.replace(/\*\*/g, '*')
   return { text, handoff, usage }
 }
