@@ -142,7 +142,7 @@ export async function POST(request: Request) {
         return bad('Stored API key could not be decrypted — re-enter your key.')
       }
     } else {
-      return bad('api_key is required')
+      apiKeyPlain = ''
     }
 
     // Only spend a provider round-trip when the credentials that affect

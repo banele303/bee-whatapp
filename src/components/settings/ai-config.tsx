@@ -182,10 +182,6 @@ export function AiConfig() {
       toast.error(t('missingModel'));
       return;
     }
-    if (!configured && !keyEdited) {
-      toast.error(t('missingApiKey'));
-      return;
-    }
     setSaving(true);
     try {
       const res = await fetch('/api/ai/config', {
@@ -302,55 +298,7 @@ export function AiConfig() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ai-key">{t('apiKey')}</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="ai-key"
-                    type={showKey ? 'text' : 'password'}
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value);
-                      setKeyEdited(true);
-                    }}
-                    onFocus={() => {
-                      if (!keyEdited && hasStoredKey) {
-                        setApiKey('');
-                        setKeyEdited(true);
-                      }
-                    }}
-                    placeholder={KEY_PLACEHOLDER[provider]}
-                    disabled={disabled}
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    tabIndex={-1}
-                  >
-                    {showKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={handleTest}
-                  disabled={disabled || testing}
-                >
-                  {testing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                  )}
-                  {t('testKey')}
-                </Button>
-              </div>
-            </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="ai-embeddings-key">

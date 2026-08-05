@@ -19,9 +19,10 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
   const { apiKey, model, systemPrompt, messages, timeoutMs, accountId, contactId } = args
 
   try {
+    const finalApiKey = process.env.DEEPSEEK_API_KEY || apiKey;
     const deepseek = createOpenAI({
       baseURL: 'https://api.deepseek.com',
-      apiKey,
+      apiKey: finalApiKey,
     })
 
     let sdkMessages: any[] = mergeConsecutive(messages).map(m => ({
