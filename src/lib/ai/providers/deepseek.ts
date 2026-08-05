@@ -75,12 +75,7 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
         if (response.toolResults && response.toolResults.length > 0) {
           sdkMessages.push({
             role: 'tool',
-            content: response.toolResults.map((tr: any) => ({
-              type: 'tool-result',
-              toolCallId: tr.toolCallId,
-              toolName: tr.toolName,
-              result: tr.result !== undefined ? tr.result : null
-            }))
+            content: response.toolResults
           })
         }
       } else {
