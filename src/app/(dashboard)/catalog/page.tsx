@@ -26,7 +26,7 @@ export default function CatalogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [vinInput, setVinInput] = useState('');
   const [vinResult, setVinResult] = useState<any | null>(null);
-  const [isSeeding, setIsSeeding] = useState(false);
+
   const [isImporting, setIsImporting] = useState(false);
 
   // Modal State
@@ -67,21 +67,6 @@ export default function CatalogPage() {
     fetchCatalogFromSupabase();
   }, []);
 
-  const handleSeedCatalog = async () => {
-    setIsSeeding(true);
-    toast.info('Seeding South African automotive parts database...');
-    try {
-      const res = await fetch('/api/catalog/seed', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Failed to seed');
-      toast.success(data.message || 'Successfully seeded catalog database!');
-      await fetchCatalogFromSupabase();
-    } catch (err: any) {
-      toast.error(err?.message || 'Error seeding database');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -212,15 +197,7 @@ export default function CatalogPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleSeedCatalog}
-            disabled={isSeeding}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-all shadow-md cursor-pointer disabled:opacity-50"
-          >
-            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-emerald-200" />}
-            Seed SA Products DB
-          </button>
-          
+
           <input 
             type="file" 
             accept=".csv" 
