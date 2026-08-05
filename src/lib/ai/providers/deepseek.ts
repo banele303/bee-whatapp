@@ -56,14 +56,26 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
       if (response.toolCalls && response.toolCalls.length > 0) {
         sdkMessages.push({
           role: 'assistant',
-          content: response.text || '',
-          toolCalls: response.toolCalls
+          content: [
+            ...(response.text ? [{ type: 'text', text: response.text }] : []),
+            ...response.toolCalls.map((tc: any) => ({
+              type: 'tool-call',
+              toolCallId: tc.toolCallId,
+              toolName: tc.toolName,
+              args: tc.args
+            }))
+          ]
         })
 
         if (response.toolResults && response.toolResults.length > 0) {
           sdkMessages.push({
             role: 'tool',
-            content: response.toolResults
+            content: response.toolResults.map((tr: any) => ({
+              type: 'tool-result',
+              toolCallId: tr.toolCallId,
+              toolName: tr.toolName,
+              result: tr.result
+            }))
           })
         }
       } else {
