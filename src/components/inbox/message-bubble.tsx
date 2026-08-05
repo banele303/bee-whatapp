@@ -144,7 +144,7 @@ function FormattedWhatsAppText({ text }: { text?: string | null }) {
               return part;
             })}
             {lIdx < lines.length - 1 && '\n'}
-          </React.Fragment>
+          </Fragment>
         );
       })}
     </span>
