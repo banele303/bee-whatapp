@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { cn } from "@/lib/utils";
 import type { Message, MessageReaction } from "@/types";
 import {
@@ -127,7 +127,7 @@ function FormattedWhatsAppText({ text }: { text?: string | null }) {
       {lines.map((line, lIdx) => {
         const parts = line.split(/(\*[^*]+\*|_[^_]+_|~[^~]+~|`[^`]+`)/g);
         return (
-          <React.Fragment key={lIdx}>
+          <Fragment key={lIdx}>
             {parts.map((part, pIdx) => {
               if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
                 return <strong key={pIdx} className="font-semibold">{part.slice(1, -1)}</strong>;
