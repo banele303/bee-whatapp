@@ -34,6 +34,7 @@ export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult
       model: openai(model),
       system: systemPrompt,
       messages: sdkMessages,
+      maxSteps: 5,
       tools: {
         searchInventory: searchInventoryTool(accountId || '') as any,
         createQuote: createQuoteTool(accountId || '', contactId || '') as any,
