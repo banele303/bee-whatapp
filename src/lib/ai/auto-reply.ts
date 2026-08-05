@@ -7,7 +7,7 @@ import { buildSystemPrompt } from './defaults'
 import { buildHandoffSummary } from './handoff'
 import { logAiUsage } from './usage'
 import { latestUserMessage } from './query'
-import { engineSendText } from '@/lib/flows/meta-send'
+import { engineSendText, engineSendMedia } from '@/lib/flows/meta-send'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 
 interface DispatchArgs {
@@ -189,6 +189,26 @@ export async function dispatchInboundToAiReply(
       text,
       aiGenerated: true,
     })
+
+    // Automatically attach and send the actual PDF Document file to WhatsApp
+    const pdfMatch = text.match(/https?:\/\/[^\s]+\/api\/quotes\/([a-zA-Z0-9-]+)\/pdf/)
+    if (pdfMatch) {
+      const pdfUrl = pdfMatch[0]
+      try {
+        await engineSendMedia({
+          accountId,
+          userId: configOwnerUserId,
+          conversationId,
+          contactId,
+          kind: 'document',
+          link: pdfUrl,
+          caption: '📄 Official Auto Parts Quotation PDF',
+          filename: 'Official-Quotation.pdf',
+        })
+      } catch (mediaErr) {
+        console.error('[ai auto-reply] failed to dispatch PDF document attachment:', mediaErr)
+      }
+    }
   } catch (err) {
     console.error('[ai auto-reply] dispatch failed:', err)
   }
