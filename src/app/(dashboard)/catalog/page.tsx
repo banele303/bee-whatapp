@@ -547,6 +547,7 @@ export default function CatalogPage() {
                     className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="e.g. Bin A-12"
                   />
+                </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-sm font-medium text-foreground">Image URL</label>
                   <input
