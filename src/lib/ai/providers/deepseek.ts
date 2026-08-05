@@ -59,7 +59,8 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
           const toolFn = (tools as any)[tc.toolName]
           if (toolFn && toolFn.execute) {
             try {
-              const res = await toolFn.execute(tc.args || {})
+              const toolInput = (tc as any).args || (tc as any).input || {}
+              const res = await toolFn.execute(toolInput)
               toolSummaries.push(`Tool "${tc.toolName}" returned:\n${JSON.stringify(res, null, 2)}`)
             } catch (err: any) {
               toolSummaries.push(`Tool "${tc.toolName}" failed: ${err.message}`)
