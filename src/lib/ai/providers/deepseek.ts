@@ -40,12 +40,17 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
     let totalUsage = { prompt: 0, completion: 0, total: 0 }
 
     for (let i = 0; i < 5; i++) {
-      const response = await generateText({
-        model: deepseek(model || 'deepseek-chat'),
-        system: systemPrompt,
-        messages: sdkMessages,
-        tools
-      })
+      let response: any;
+      try {
+        response = await generateText({
+          model: deepseek(model || 'deepseek-chat'),
+          system: systemPrompt || undefined,
+          messages: sdkMessages,
+          tools
+        })
+      } catch (genErr: any) {
+        throw new Error(`generateText failed at step ${i}. Messages: ${JSON.stringify(sdkMessages)}. Error: ${genErr.message}`);
+      }
 
       if (response.usage) {
         totalUsage.prompt += (response.usage as any).promptTokens || 0
