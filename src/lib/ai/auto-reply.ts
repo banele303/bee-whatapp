@@ -191,9 +191,19 @@ export async function dispatchInboundToAiReply(
     })
 
     // Automatically attach and send the actual PDF Document file to WhatsApp
-    const pdfMatch = text.match(/https?:\/\/[^\s]+\/api\/quotes\/([a-zA-Z0-9-]+)\/pdf/)
-    if (pdfMatch) {
-      const pdfUrl = pdfMatch[0]
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bee-whatapp.vercel.app'
+    const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+    const { data: recentQuotes } = await db
+      .from('quotes_and_invoices')
+      .select('id, quote_number')
+      .eq('account_id', accountId)
+      .gte('created_at', twoMinsAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (recentQuotes && recentQuotes.length > 0) {
+      const q = recentQuotes[0]
+      const pdfUrl = `${appUrl}/api/quotes/${q.id}/pdf`
       try {
         await engineSendMedia({
           accountId,
@@ -202,8 +212,8 @@ export async function dispatchInboundToAiReply(
           contactId,
           kind: 'document',
           link: pdfUrl,
-          caption: '📄 Official Auto Parts Quotation PDF',
-          filename: 'Official-Quotation.pdf',
+          caption: `📄 Official Auto Parts Quotation PDF (${q.quote_number})`,
+          filename: `Quotation-${q.quote_number}.pdf`,
         })
       } catch (mediaErr) {
         console.error('[ai auto-reply] failed to dispatch PDF document attachment:', mediaErr)

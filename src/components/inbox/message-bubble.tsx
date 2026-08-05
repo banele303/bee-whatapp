@@ -119,13 +119,43 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
   );
 }
 
+function FormattedWhatsAppText({ text }: { text?: string | null }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return (
+    <span className="whitespace-pre-wrap break-words text-sm">
+      {lines.map((line, lIdx) => {
+        const parts = line.split(/(\*[^*]+\*|_[^_]+_|~[^~]+~|`[^`]+`)/g);
+        return (
+          <React.Fragment key={lIdx}>
+            {parts.map((part, pIdx) => {
+              if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                return <strong key={pIdx} className="font-semibold">{part.slice(1, -1)}</strong>;
+              }
+              if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+                return <em key={pIdx} className="italic">{part.slice(1, -1)}</em>;
+              }
+              if (part.startsWith('~') && part.endsWith('~') && part.length > 2) {
+                return <del key={pIdx} className="line-through">{part.slice(1, -1)}</del>;
+              }
+              if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+                return <code key={pIdx} className="font-mono bg-muted/60 px-1 py-0.5 rounded text-xs">{part.slice(1, -1)}</code>;
+              }
+              return part;
+            })}
+            {lIdx < lines.length - 1 && '\n'}
+          </React.Fragment>
+        );
+      })}
+    </span>
+  );
+}
+
 function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof useTranslations> }) {
   switch (message.content_type) {
     case "text":
       return (
-        <p className="whitespace-pre-wrap break-words text-sm">
-          {message.content_text}
-        </p>
+        <FormattedWhatsAppText text={message.content_text} />
       );
 
     case "image":
