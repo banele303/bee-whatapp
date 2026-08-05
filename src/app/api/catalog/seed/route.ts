@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         selling_price: 650.00,
         stock_qty: 18,
         warehouse_location: 'Bin A-12',
-        image_url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop',
+        image_url: '/parts/hilux_brake_pads.jpg',
       },
       {
         account_id: accountId,
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         selling_price: 4500.00,
         stock_qty: 4,
         warehouse_location: 'Rack L-03',
-        image_url: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=600&auto=format&fit=crop',
+        image_url: '/parts/fortuner_headlight.jpg',
       },
       {
         account_id: accountId,
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         selling_price: 1750.00,
         stock_qty: 0, // 0 Stock triggers Stagehand Browser Sourcing!
         warehouse_location: 'Bin C-04',
-        image_url: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600&auto=format&fit=crop',
+        image_url: '/parts/polo_water_pump.jpg',
       },
       {
         account_id: accountId,
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         selling_price: 5200.00,
         stock_qty: 6,
         warehouse_location: 'Rack T-08',
-        image_url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop',
+        image_url: '/parts/ranger_clutch_kit.jpg',
       },
       {
         account_id: accountId,
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         selling_price: 3500.00,
         stock_qty: 3,
         warehouse_location: 'Bin E-01',
-        image_url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=600&auto=format&fit=crop',
+        image_url: '/parts/dmax_alternator.jpg',
       },
       {
         account_id: accountId,
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
         selling_price: 2600.00,
         stock_qty: 12,
         warehouse_location: 'Bin B-09',
-        image_url: 'https://images.unsplash.com/photo-1600706432520-22c608f654b6?w=600&auto=format&fit=crop',
+        image_url: '/parts/bmw_brake_disc.jpg',
       },
       {
         account_id: accountId,
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         selling_price: 280.00,
         stock_qty: 45,
         warehouse_location: 'Bin F-02',
-        image_url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&auto=format&fit=crop',
+        image_url: '/parts/mercedes_oil_filter.jpg',
       },
       {
         account_id: accountId,
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
         selling_price: 350.00,
         stock_qty: 28,
         warehouse_location: 'Bin F-05',
-        image_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop',
+        image_url: '/parts/hilux_fuel_filter.jpg',
       }
     ]
 

@@ -17,6 +17,7 @@ interface CatalogItem {
   sellingPriceZAR: number;
   stockQty: number;
   warehouseLocation: string;
+  imageUrl?: string;
 }
 
 export default function CatalogPage() {
@@ -52,7 +53,8 @@ export default function CatalogPage() {
           costPriceZAR: Number(p.cost_price) || 0,
           sellingPriceZAR: Number(p.selling_price) || 0,
           stockQty: Number(p.stock_qty) || 0,
-          warehouseLocation: p.warehouse_location || 'Warehouse'
+          warehouseLocation: p.warehouse_location || 'Warehouse',
+          imageUrl: p.image_url || null
         }));
         setItems(mapped);
       }
@@ -293,104 +295,140 @@ export default function CatalogPage() {
         )}
       </div>
 
-      {/* Filter & Table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
-        <div className="p-4 border-b border-border flex items-center gap-3">
-          <Search className="w-5 h-5 text-muted-foreground" />
+      {/* Filter & Grid */}
+      <div className="space-y-6">
+        <div className="p-1 border border-border bg-card/50 backdrop-blur-sm rounded-2xl flex items-center shadow-sm sticky top-0 z-10 transition-all focus-within:ring-2 focus-within:ring-orange-500/50">
+          <div className="pl-4">
+            <Search className="w-5 h-5 text-muted-foreground" />
+          </div>
           <input
             type="text"
             placeholder="Search by Part Name, SKU, or OEM Number..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none outline-none text-foreground placeholder-muted-foreground text-sm"
+            className="w-full bg-transparent px-4 py-3 border-none outline-none text-foreground placeholder-muted-foreground text-sm font-medium"
           />
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-muted-foreground">
-            <thead className="bg-muted text-muted-foreground text-xs uppercase font-semibold border-b border-border">
-              <tr>
-                <th className="px-6 py-4">Part Name & Category</th>
-                <th className="px-6 py-4">OEM Number</th>
-                <th className="px-6 py-4">SKU</th>
-                <th className="px-6 py-4">Brand</th>
-                <th className="px-6 py-4">Price (ZAR)</th>
-                <th className="px-6 py-4">Stock Qty</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredItems.map((item) => (
-                <tr key={item.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-foreground">{item.name}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Tag className="w-3 h-3" />
-                      {item.category}
+        {filteredItems.length === 0 ? (
+          <div className="p-12 border border-dashed border-border rounded-2xl text-center bg-card/30">
+            <Box className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <h3 className="text-lg font-bold text-foreground">No parts found</h3>
+            <p className="text-muted-foreground mt-1">Try a different search or add a new part.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredItems.map((item) => (
+              <div key={item.id} className="group relative flex flex-col bg-card/80 backdrop-blur-md border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                
+                {/* Image Section */}
+                <div className="relative h-48 bg-muted/30 overflow-hidden">
+                  {item.imageUrl ? (
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-accent/20">
+                      <Box className="w-12 h-12 text-muted-foreground opacity-30" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4 font-mono font-medium text-foreground">
-                    {item.oemNumber}
-                  </td>
-                  <td className="px-6 py-4 font-mono text-xs text-muted-foreground">
-                    {item.sku}
-                  </td>
-                  <td className="px-6 py-4 text-xs font-semibold text-foreground">
-                    {item.brand}
-                  </td>
-                  <td className="px-6 py-4 font-bold text-foreground">
-                    R {item.sellingPriceZAR.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 font-mono font-bold text-foreground">
-                      <Box className="w-4 h-4 text-muted-foreground" />
-                      {item.stockQty}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
+                  )}
+                  
+                  {/* Stock Badge */}
+                  <div className="absolute top-3 right-3">
                     {item.stockQty > 0 ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                        In Stock
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/90 text-white shadow-sm backdrop-blur-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        {item.stockQty} In Stock
                       </span>
                     ) : (
-                      <button 
-                        onClick={() => router.push(`/source-parts?q=${encodeURIComponent(item.name)}`)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 hover:opacity-80 transition-opacity cursor-pointer"
-                      >
-                        <ArrowUpRight className="w-3 h-3" />
-                        Scout External Supplier
-                      </button>
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/90 text-white shadow-sm backdrop-blur-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                        Out of Stock
+                      </span>
                     )}
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button 
-                      onClick={() => openEditModal(item)}
-                      className="p-2 text-blue-600 hover:bg-muted-foreground dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                      title="Edit Part"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(item.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                      title="Delete Part"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredItems.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-muted-foreground">
-                    No products found. Add a new part or import a CSV.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                  
+                  {/* Category Badge */}
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-background/80 text-foreground backdrop-blur-md shadow-sm border border-border/50">
+                      {item.category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Content Section */}
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <h3 className="font-bold text-foreground line-clamp-2 leading-tight">
+                      {item.name}
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-4 text-xs">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">SKU</span>
+                      <span className="font-mono text-foreground">{item.sku}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">OEM</span>
+                      <span className="font-mono text-foreground">{item.oemNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">Brand</span>
+                      <span className="font-semibold text-foreground truncate">{item.brand}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">Loc</span>
+                      <span className="font-mono text-foreground">{item.warehouseLocation}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto">
+                    <div className="flex items-end justify-between mb-4">
+                      <div className="space-y-0.5">
+                        <span className="text-muted-foreground text-xs font-medium">Selling Price</span>
+                        <div className="text-2xl font-black text-foreground">
+                          R {item.sellingPriceZAR.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {item.stockQty === 0 && (
+                        <button 
+                          onClick={() => router.push(`/source-parts?q=${encodeURIComponent(item.name)}`)}
+                          className="flex-1 flex justify-center items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20"
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          Scout Suppliers
+                        </button>
+                      )}
+                      
+                      <div className="flex gap-2 ml-auto">
+                        <button 
+                          onClick={() => openEditModal(item)}
+                          className="p-2.5 rounded-xl bg-accent text-accent-foreground hover:bg-blue-500 hover:text-white transition-colors border border-border"
+                          title="Edit Part"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item.id)}
+                          className="p-2.5 rounded-xl bg-accent text-accent-foreground hover:bg-red-500 hover:text-white transition-colors border border-border"
+                          title="Delete Part"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}
