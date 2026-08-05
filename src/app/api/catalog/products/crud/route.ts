@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     if (!profile?.account_id) return NextResponse.json({ error: 'No account' }, { status: 400 })
 
     const body = await req.json()
-    const { sku, oem_number, name, category, brand, cost_price, selling_price, stock_qty, warehouse_location } = body
+    const { sku, oem_number, name, category, brand, cost_price, selling_price, stock_qty, warehouse_location, image_url } = body
 
     if (!sku || !name) {
       return NextResponse.json({ error: 'SKU and name are required' }, { status: 400 })
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
         selling_price: Number(selling_price) || 0,
         stock_qty: Number(stock_qty) || 0,
         warehouse_location: warehouse_location || 'Warehouse',
+        image_url: image_url || null,
       })
       .select()
       .single()

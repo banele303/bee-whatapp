@@ -156,6 +156,7 @@ export default function CatalogPage() {
         selling_price: formData.sellingPriceZAR,
         stock_qty: formData.stockQty,
         warehouse_location: formData.warehouseLocation,
+        image_url: formData.imageUrl || null,
       };
 
       const res = await fetch('/api/catalog/products/crud', {
@@ -545,6 +546,15 @@ export default function CatalogPage() {
                     onChange={e => setFormData({...formData, warehouseLocation: e.target.value})}
                     className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="e.g. Bin A-12"
+                  />
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-sm font-medium text-foreground">Image URL</label>
+                  <input
+                    type="text"
+                    value={formData.imageUrl || ''}
+                    onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="e.g. https://example.com/image.jpg or /parts/image.jpg"
                   />
                 </div>
               </div>
