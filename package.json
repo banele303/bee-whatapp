@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.23",
-    "@ai-sdk/openai": "^4.0.23",
+    "@ai-sdk/openai": "^4.0.27",
     "@ai-sdk/react": "^4.0.44",
     "@base-ui/react": "^1.6.0",
     "@browserbasehq/sdk": "^2.16.0",
