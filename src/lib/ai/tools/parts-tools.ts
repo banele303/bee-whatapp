@@ -27,7 +27,10 @@ export const searchInventoryTool = (accountId: string) => ({
     let rpcQuery = db
       .from('parts_catalog')
       .select('*')
-      .eq('account_id', accountId)
+
+    if (accountId && accountId.trim() !== '') {
+      rpcQuery = rpcQuery.eq('account_id', accountId)
+    }
 
     if (query) {
       rpcQuery = rpcQuery.ilike('name', `%${query}%`)
