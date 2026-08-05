@@ -295,116 +295,117 @@ export default function CatalogPage() {
             <p className="text-muted-foreground mt-1">Try a different search or add a new part.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredItems.map((item) => (
-              <div key={item.id} className="group relative flex flex-col bg-card/80 backdrop-blur-md border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                
-                {/* Image Section */}
-                <div className="relative h-48 bg-muted/30 overflow-hidden">
-                  {item.imageUrl ? (
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-accent/20">
-                      <Box className="w-12 h-12 text-muted-foreground opacity-30" />
-                    </div>
-                  )}
-                  
-                  {/* Stock Badge */}
-                  <div className="absolute top-3 right-3">
-                    {item.stockQty > 0 ? (
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/90 text-white shadow-sm backdrop-blur-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        {item.stockQty} In Stock
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/90 text-white shadow-sm backdrop-blur-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                        Out of Stock
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Category Badge */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-                    <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-background/80 text-foreground backdrop-blur-md shadow-sm border border-border/50">
-                      {item.category}
-                    </span>
-                  </div>
-                </div>
+          <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-md overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground text-[10px] uppercase font-bold tracking-wider border-b border-border">
+                  <tr>
+                    <th className="px-6 py-4">Part Details</th>
+                    <th className="px-6 py-4">Identifiers</th>
+                    <th className="px-6 py-4">Location & Stock</th>
+                    <th className="px-6 py-4">Price</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-accent/30 transition-colors group">
+                      {/* Part Details */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-muted/30 overflow-hidden shrink-0 border border-border/50">
+                            {item.imageUrl ? (
+                              <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Box className="w-6 h-6 m-auto mt-3 text-muted-foreground opacity-30" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-bold text-foreground line-clamp-1">{item.name}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                              <span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider bg-background border border-border shadow-sm">{item.category}</span>
+                              <span className="font-medium text-foreground">{item.brand}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
 
-                {/* Content Section */}
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex justify-between items-start gap-2 mb-2">
-                    <h3 className="font-bold text-foreground line-clamp-2 leading-tight">
-                      {item.name}
-                    </h3>
-                  </div>
+                      {/* Identifiers */}
+                      <td className="px-6 py-4">
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground font-bold tracking-wider text-[10px] uppercase w-8">SKU</span>
+                            <span className="font-mono text-foreground">{item.sku}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground font-bold tracking-wider text-[10px] uppercase w-8">OEM</span>
+                            <span className="font-mono text-foreground">{item.oemNumber}</span>
+                          </div>
+                        </div>
+                      </td>
 
-                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-4 text-xs">
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">SKU</span>
-                      <span className="font-mono text-foreground">{item.sku}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">OEM</span>
-                      <span className="font-mono text-foreground">{item.oemNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">Brand</span>
-                      <span className="font-semibold text-foreground truncate">{item.brand}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider mb-0.5">Loc</span>
-                      <span className="font-mono text-foreground">{item.warehouseLocation}</span>
-                    </div>
-                  </div>
+                      {/* Location & Stock */}
+                      <td className="px-6 py-4">
+                        <div className="space-y-2">
+                          <div className="text-xs font-mono text-foreground">
+                            {item.warehouseLocation || 'No Bin'}
+                          </div>
+                          <div>
+                            {item.stockQty > 0 ? (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                {item.stockQty} In Stock
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold bg-red-500/10 text-red-600 border border-red-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                Out of Stock
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-                  <div className="mt-auto">
-                    <div className="flex items-end justify-between mb-4">
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground text-xs font-medium">Selling Price</span>
-                        <div className="text-2xl font-black text-foreground">
+                      {/* Price */}
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-black text-foreground">
                           R {item.sellingPriceZAR.toFixed(2)}
                         </div>
-                      </div>
-                    </div>
+                      </td>
 
-                    <div className="flex items-center gap-2">
-                      {item.stockQty === 0 && (
-                        <button 
-                          onClick={() => router.push(`/source-parts?q=${encodeURIComponent(item.name)}`)}
-                          className="flex-1 flex justify-center items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20"
-                        >
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                          Scout Suppliers
-                        </button>
-                      )}
-                      
-                      <div className="flex gap-2 ml-auto">
-                        <button 
-                          onClick={() => openEditModal(item)}
-                          className="p-2.5 rounded-xl bg-accent text-accent-foreground hover:bg-blue-500 hover:text-white transition-colors border border-border"
-                          title="Edit Part"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(item.id)}
-                          className="p-2.5 rounded-xl bg-accent text-accent-foreground hover:bg-red-500 hover:text-white transition-colors border border-border"
-                          title="Delete Part"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
+                          {item.stockQty === 0 && (
+                            <button 
+                              onClick={() => router.push(`/source-parts?q=${encodeURIComponent(item.name)}`)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20"
+                              title="Scout Suppliers"
+                            >
+                              <ArrowUpRight className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => openEditModal(item)}
+                            className="p-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-blue-500 hover:text-white transition-colors border border-border"
+                            title="Edit Part"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-red-500 hover:text-white transition-colors border border-border"
+                            title="Delete Part"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
