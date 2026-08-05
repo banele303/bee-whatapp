@@ -63,7 +63,7 @@ export async function dispatchInboundToAiReply(
       .select('id')
       .eq('account_id', accountId)
       .eq('is_active', true)
-      .in('trigger_type', ['new_message_received', 'keyword_match'])
+      .in('trigger_type', ['new_message_received'])
       .limit(1)
     if (autoResponders && autoResponders.length > 0) return
 
