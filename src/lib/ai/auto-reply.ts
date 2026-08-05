@@ -203,7 +203,7 @@ export async function dispatchInboundToAiReply(
 
     if (recentQuotes && recentQuotes.length > 0) {
       const q = recentQuotes[0]
-      const pdfUrl = `${appUrl}/api/quotes/${q.id}/pdf`
+      const pdfUrl = `${appUrl}/api/quotes/${q.id}/download`
       try {
         await engineSendMedia({
           accountId,
