@@ -2,23 +2,21 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/ai/admin-client'
 
-const params = z.object({
-  items: z.array(
-    z.object({
-      sku: z.string(),
-      quantity: z.number(),
-      unitPrice: z.number(),
-      description: z.string(),
-    })
-  ),
-  customerName: z.string().describe('Customer full name'),
-  phoneNumber: z.string().optional().describe('Customer phone number'),
-})
-
 export const createQuote = tool({
   description: 'Create a formal ZAR quote with PDF generation for the customer.',
-  parameters: params,
-  execute: async ({ items, customerName, phoneNumber }: z.infer<typeof params>) => {
+  parameters: z.object({
+    items: z.array(
+      z.object({
+        sku: z.string(),
+        quantity: z.number(),
+        unitPrice: z.number(),
+        description: z.string(),
+      })
+    ),
+    customerName: z.string().describe('Customer full name'),
+    phoneNumber: z.string().optional().describe('Customer phone number'),
+  }),
+  execute: async ({ items, customerName, phoneNumber }: { items: { sku: string; quantity: number; unitPrice: number; description: string }[]; customerName: string; phoneNumber?: string }) => {
     const db = supabaseAdmin()
 
     const subtotal = items.reduce((acc: number, item) => acc + item.quantity * item.unitPrice, 0)
