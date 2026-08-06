@@ -123,7 +123,7 @@ export async function GET(
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Length': pdfBuffer.length.toString(),
-        'Content-Disposition': `inline; filename="Quotation-${quote.quote_number}.pdf"`,
+        'Content-Disposition': `attachment; filename="Quotation-${quote.quote_number}.pdf"`,
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     })

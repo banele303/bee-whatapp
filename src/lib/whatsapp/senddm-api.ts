@@ -69,9 +69,16 @@ export async function sendSendDmMedia(args: SendDmMediaMessageArgs): Promise<Sen
       type: 'document',
       document: {
         link,
+        url: link,
+        media_url: link,
         caption: caption || undefined,
         filename: filename || 'Quotation.pdf',
       },
+      link,
+      url: link,
+      media_url: link,
+      caption: caption || undefined,
+      filename: filename || 'Quotation.pdf',
     }),
   })
 
