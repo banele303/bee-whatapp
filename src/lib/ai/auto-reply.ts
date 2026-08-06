@@ -192,21 +192,32 @@ export async function dispatchInboundToAiReply(
 
     // Automatically attach and send the actual PDF Document file to WhatsApp
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bee-whatapp.vercel.app'
-    const threeMinsAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString()
-    
+    const match = text.match(/QT-[A-Z0-9]+/i)
+    const mentionedQuoteNum = match ? match[0].toUpperCase() : null
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
     let recentQuote: { id: string; quote_number: string } | null = null
-    if (contactId) {
+
+    if (mentionedQuoteNum) {
+      const { data: qByNum } = await db
+        .from('quotes_and_invoices')
+        .select('id, quote_number')
+        .eq('account_id', accountId)
+        .eq('quote_number', mentionedQuoteNum)
+        .maybeSingle()
+      if (qByNum) recentQuote = qByNum
+    }
+
+    if (!recentQuote && contactId) {
       const { data: cQuotes } = await db
         .from('quotes_and_invoices')
         .select('id, quote_number')
         .eq('account_id', accountId)
         .eq('contact_id', contactId)
-        .gte('created_at', threeMinsAgo)
+        .gte('created_at', oneDayAgo)
         .order('created_at', { ascending: false })
         .limit(1)
-      if (cQuotes && cQuotes.length > 0) {
-        recentQuote = cQuotes[0]
-      }
+      if (cQuotes && cQuotes.length > 0) recentQuote = cQuotes[0]
     }
 
     if (!recentQuote) {
@@ -214,12 +225,10 @@ export async function dispatchInboundToAiReply(
         .from('quotes_and_invoices')
         .select('id, quote_number')
         .eq('account_id', accountId)
-        .gte('created_at', threeMinsAgo)
+        .gte('created_at', oneDayAgo)
         .order('created_at', { ascending: false })
         .limit(1)
-      if (aQuotes && aQuotes.length > 0) {
-        recentQuote = aQuotes[0]
-      }
+      if (aQuotes && aQuotes.length > 0) recentQuote = aQuotes[0]
     }
 
     if (recentQuote) {
