@@ -1005,7 +1005,7 @@ Select a preset prompt below or type your query to run the live agent pipeline!`
           ) : (
             /* Copilot Chat Studio View */
             <div className="flex-1 flex flex-col min-h-0">
-              <ScrollArea className="flex-1 p-4">
+              <div className="flex-1 p-4 overflow-y-auto space-y-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                   {localMessages.map((m, idx) => (
                     <div
@@ -1078,7 +1078,7 @@ Select a preset prompt below or type your query to run the live agent pipeline!`
                   ))}
                   <div ref={messagesEndRef} />
                 </div>
-              </ScrollArea>
+              </div>
 
               {/* Chat Input Bar */}
               <div className="p-4 border-t border-border bg-card/60 backdrop-blur-md shrink-0">

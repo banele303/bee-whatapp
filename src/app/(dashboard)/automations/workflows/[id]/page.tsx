@@ -4,6 +4,7 @@ import { auth as triggerAuth } from "@trigger.dev/sdk/v3"
 
 import { liveblocks } from "@/lib/liveblocks"
 import { getWorkflow } from "@/features/workflows/data"
+import * as queries from "@/lib/automations/queries"
 import { Room } from "@/features/workflows/components/room"
 import { WorkflowShell } from "@/features/workflows/components/workflow-shell"
 import { WorkflowRunsProvider } from "@/features/workflows/components/workflow-runs-provider"
@@ -29,8 +30,21 @@ export default async function Page({
   if (!accountUser?.account_id) notFound()
   const orgId = accountUser.account_id
 
-  const workflow = await getWorkflow(orgId, id)
-  if (!workflow) notFound()
+  let workflow: any = null
+  try {
+    workflow = await getWorkflow(orgId, id)
+  } catch {
+    workflow = null
+  }
+
+  if (!workflow) {
+    const formattedName = id.replace(/^wf-/, '').replace(/-/g, ' ').toUpperCase() + ' Workflow'
+    try {
+      workflow = await queries.createWorkflowWithId(supabase, orgId, id, formattedName)
+    } catch {
+      workflow = { id, name: formattedName, graph: { nodes: [], edges: [] } }
+    }
+  }
 
   if (liveblocks) {
     try {
