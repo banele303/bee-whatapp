@@ -191,7 +191,12 @@ export async function dispatchInboundToAiReply(
     })
 
     // Automatically attach and send the actual PDF Document file to WhatsApp
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bee-whatapp.vercel.app'
+    let rawUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'https://bee-whatapp.vercel.app'
+    if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+      rawUrl = `https://${rawUrl}`
+    }
+    const appUrl = rawUrl.replace(/\/$/, '')
+
     const match = text.match(/QT-[A-Z0-9]+/i)
     const mentionedQuoteNum = match ? match[0].toUpperCase() : null
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -202,7 +207,6 @@ export async function dispatchInboundToAiReply(
       const { data: qByNum } = await db
         .from('quotes_and_invoices')
         .select('id, quote_number')
-        .eq('account_id', accountId)
         .eq('quote_number', mentionedQuoteNum)
         .maybeSingle()
       if (qByNum) recentQuote = qByNum

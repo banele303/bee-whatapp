@@ -128,11 +128,12 @@ export async function GET(
     
     const pdfBuffer = await pdfPromise
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
+    return new Response(pdfBuffer as any, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Length': pdfBuffer.length.toString(),
-        'Content-Disposition': `attachment; filename="Quotation-${quote.quote_number}.pdf"`,
+        'Content-Disposition': `inline; filename="Quotation-${quote.quote_number}.pdf"`,
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     })
