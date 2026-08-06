@@ -730,6 +730,11 @@ Select a preset prompt below or type your query to run the live agent pipeline!`
     sendMessage(text)
   }
 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    sendMessage(inputVal)
+  }
+
   return (
     <TooltipProvider>
       <div className="flex h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden font-sans">
