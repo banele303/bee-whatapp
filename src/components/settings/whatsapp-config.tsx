@@ -212,7 +212,7 @@ export function WhatsAppConfig() {
           .upsert(
             {
               account_id: accountId,
-              user_id: user.id,
+              user_id: user?.id || null,
               phone_number_id: 'senddm',
               waba_id: 'senddm',
               access_token: accessToken.trim(),
