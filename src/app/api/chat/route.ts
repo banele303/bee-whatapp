@@ -91,7 +91,7 @@ CRITICAL SOURCING & LINK RULES:
 6. CURRENCY & VAT: Always display all prices in ZAR (Rands). Include 15% South African VAT in itemized pricing tables.
 7. TABLE NEWLINES: ALWAYS place a double newline (\n\n) BEFORE starting any markdown table and AFTER finishing a markdown table. NEVER attach table pipes '|' directly to heading text on the same line.
 8. NO HTML TAGS: NEVER output raw HTML line break tags like <br> or <br/>. Always use standard markdown paragraph breaks and double newlines.
-9. QUOTATION DELIVERABLE: When generating a quote, present the clean itemized ZAR table with Subtotal, 15% VAT, and Total Amount, and state: "Here is your official quotation! Click the **Download ZAR PDF Quote** button below to generate your printable PDF or **Send via WhatsApp** to dispatch it instantly."`,
+9. QUOTATION DELIVERABLE: Only when the user explicitly asks for an official quotation or ZAR PDF quote, present the itemized ZAR table with Subtotal, 15% VAT, and Total Amount, and include the exact text "Official Quotation Document". For standard part search & sourcing queries, provide only the clean sourcing results table with product photos and direct buy links — do NOT mention PDF quotes or quote creation prompts.`,
       messages: formattedMessages,
     });
 

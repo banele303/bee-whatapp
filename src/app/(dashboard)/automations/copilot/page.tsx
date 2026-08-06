@@ -75,8 +75,6 @@ function FormattedMarkdown({ content }: { content: string }) {
     .replace(/However, I can give you the exact, ready-to-copy quote content in a PDF-friendly format\./gi, '')
     .replace(/Step 2: Create PDF instantly[\s\S]*?PDF24/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/\|\|/g, '|\n|')
-    .replace(/([^\n])\|/g, '$1\n|')
 
   const lines = cleanedContent.split('\n')
   const elements: React.ReactNode[] = []
@@ -219,17 +217,13 @@ function FormattedMarkdown({ content }: { content: string }) {
         flushTable(index)
       }
 
-      if (trimmed.startsWith('### ')) {
+      const headerMatch = trimmed.match(/^#{1,6}\s*(.*)/)
+      if (headerMatch) {
+        const headerText = headerMatch[1].trim()
         elements.push(
-          <h3 key={index} className="text-base font-bold text-foreground mt-4 mb-2 flex items-center gap-2">
-            {formatLine(trimmed.slice(4))}
+          <h3 key={index} className="text-sm font-bold text-foreground mt-4 mb-2 flex items-center gap-2 border-b border-border/40 pb-1 text-emerald-400">
+            {formatLine(headerText)}
           </h3>
-        )
-      } else if (trimmed.startsWith('#### ')) {
-        elements.push(
-          <h4 key={index} className="text-sm font-semibold text-emerald-400 mt-3 mb-1.5">
-            {formatLine(trimmed.slice(5))}
-          </h4>
         )
       } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         elements.push(
@@ -1043,12 +1037,10 @@ Select a preset prompt below or type your query to run the live agent pipeline!`
                           <div>
                             <FormattedMarkdown content={m.content} />
 
-                            {/* Always-Visible Action Bar for Quotation Messages */}
+                            {/* Action Bar for Quotation Messages */}
                             {idx > 0 &&
-                              (m.content.includes('Official ZAR PDF') ||
-                                m.content.includes('quotation') ||
-                                m.content.includes('Quote') ||
-                                m.content.includes('Total Amount')) && (
+                              (m.content.includes('Official Quotation Document') ||
+                                m.content.includes('OFFICIAL QUOTATION')) && (
                                 <div className="mt-4 pt-3 border-t border-border/80 flex items-center gap-2 flex-wrap">
                                   <Button
                                     size="sm"
