@@ -21,14 +21,27 @@ export default async function Page({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const { data: accountUser } = await supabase
-    .from('account_users')
+  const { data: profile } = await supabase
+    .from('profiles')
     .select('account_id')
     .eq('user_id', user.id)
-    .single()
-    
-  if (!accountUser?.account_id) notFound()
-  const orgId = accountUser.account_id
+    .maybeSingle()
+
+  let orgId = profile?.account_id
+
+  if (!orgId) {
+    const { data: accountUser } = await supabase
+      .from('account_users')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    orgId = accountUser?.account_id
+  }
+
+  if (!orgId) {
+    const { data: firstAcct } = await supabase.from('accounts').select('id').limit(1).maybeSingle()
+    orgId = firstAcct?.id || user.id
+  }
 
   let workflow: any = null
   try {
