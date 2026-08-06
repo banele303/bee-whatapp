@@ -13,6 +13,7 @@ import {
   Zap,
   AlertTriangle,
   RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
