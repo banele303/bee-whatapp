@@ -120,7 +120,7 @@ export async function GET(
     
     const pdfBuffer = await pdfPromise
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="Quotation-${quote.quote_number}.pdf"`,

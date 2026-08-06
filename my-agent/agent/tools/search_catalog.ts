@@ -2,15 +2,17 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/ai/admin-client'
 
+const params = z.object({
+  query: z.string().describe('Part name, category, or description'),
+  make: z.string().optional().describe('Vehicle make (e.g. Toyota, BMW)'),
+  model: z.string().optional().describe('Vehicle model (e.g. Hilux, 320i)'),
+  year: z.number().optional().describe('Vehicle manufacturing year'),
+})
+
 export const searchCatalog = tool({
   description: 'Search the local auto parts inventory by query, make, model, or year.',
-  parameters: z.object({
-    query: z.string().describe('Part name, category, or description'),
-    make: z.string().optional().describe('Vehicle make (e.g. Toyota, BMW)'),
-    model: z.string().optional().describe('Vehicle model (e.g. Hilux, 320i)'),
-    year: z.number().optional().describe('Vehicle manufacturing year'),
-  }),
-  execute: async ({ query }) => {
+  parameters: params,
+  execute: async ({ query }: z.infer<typeof params>) => {
     const db = supabaseAdmin()
     
     const { data: parts, error } = await db
