@@ -1,9 +1,11 @@
-import { tool } from 'ai'
 import { z } from 'zod'
 
-export const getWeather = tool({
+export const getWeather = {
   description: 'Get the weather in a location',
   parameters: z.object({
+    location: z.string().describe('The location to get the weather for'),
+  }),
+  inputSchema: z.object({
     location: z.string().describe('The location to get the weather for'),
   }),
   execute: async ({ location }: { location: string }) => {
@@ -13,4 +15,4 @@ export const getWeather = tool({
       location,
     }
   },
-})
+}

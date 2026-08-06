@@ -1,10 +1,15 @@
-import { tool } from 'ai'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/ai/admin-client'
 
-export const searchCatalog = tool({
+export const searchCatalog = {
   description: 'Search the local auto parts inventory by query, make, model, or year.',
   parameters: z.object({
+    query: z.string().describe('Part name, category, or description'),
+    make: z.string().optional().describe('Vehicle make (e.g. Toyota, BMW)'),
+    model: z.string().optional().describe('Vehicle model (e.g. Hilux, 320i)'),
+    year: z.number().optional().describe('Vehicle manufacturing year'),
+  }),
+  inputSchema: z.object({
     query: z.string().describe('Part name, category, or description'),
     make: z.string().optional().describe('Vehicle make (e.g. Toyota, BMW)'),
     model: z.string().optional().describe('Vehicle model (e.g. Hilux, 320i)'),
@@ -36,4 +41,4 @@ export const searchCatalog = tool({
       })),
     }
   },
-})
+}
