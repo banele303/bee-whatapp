@@ -116,14 +116,10 @@ export const createQuoteTool = (accountId: string, contactId?: string) => ({
       return { error: 'Failed to create quote.' }
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bee-whatapp.vercel.app'
-    const pdfUrl = `${appUrl}/api/quotes/${quote.id}/pdf`
-
     return { 
       success: true, 
       quoteId: quote.id,
       quoteNumber, 
-      pdfUrl,
       subtotal,
       vat,
       total, 

@@ -64,6 +64,7 @@ export function buildSystemPrompt(args: {
     'Guidelines:\n' +
       '- Format for WhatsApp ONLY: use single asterisks *bold* for part names, SKUs, and prices (e.g. *BMW 320i Brake Pads* - *R1,200*). NEVER use double asterisks (**).\n' +
       '- Keep messages ultra short, clean, and concise (2-3 short sentences max).\n' +
+      '- NEVER include any URLs, web links, or text saying "Download your PDF here". The PDF document is automatically attached to WhatsApp as a document file.\n' +
       '- Be direct: state the options or answers immediately without warmups or filler sentences.\n' +
       '- Only mention parts directly relevant to the customer\'s search. Never list unrelated vehicle models or parts.\n' +
       '- Reply in the same language the customer is writing in.\n' +

@@ -55,14 +55,11 @@ export const createQuote = {
       return { error: 'Failed to generate quote.' }
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bee-whatapp.vercel.app'
-
     return {
       success: true,
       quoteId: quote.id,
       quoteNumber,
       total,
-      pdfUrl: `${appUrl}/api/quotes/${quote.id}/download/Quotation-${quote.quote_number}.pdf`,
       message: `Quote *${quoteNumber}* created for *${customerName}* (Total: *R ${total.toFixed(2)}* incl. VAT).`,
     }
   },
