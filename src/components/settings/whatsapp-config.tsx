@@ -229,6 +229,13 @@ export function WhatsAppConfig() {
         return;
       }
 
+      const payload: Record<string, unknown> = {
+        phone_number_id: phoneNumberId.trim(),
+        waba_id: wabaId.trim() || null,
+        verify_token: verifyToken.trim() || null,
+        pin: pin.trim() || null,
+      };
+
       if (tokenEdited && accessToken !== MASKED_TOKEN && accessToken.trim()) {
         payload.access_token = accessToken.trim();
       } else if (config) {
