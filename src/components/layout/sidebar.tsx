@@ -99,7 +99,6 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
-  { href: "/onboarding", labelKey: "onboarding", icon: Sparkles },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
   { href: "/catalog", labelKey: "catalog", icon: Wrench },
   { href: "/appointments", labelKey: "appointments", icon: Calendar },

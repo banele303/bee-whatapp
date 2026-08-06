@@ -58,9 +58,8 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      // Simulate provisioning tenant workspace with selected vertical settings
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      router.push('/inbox');
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      router.push('/dashboard');
     } catch (err) {
       console.error('Failed to provision vertical workspace:', err);
     } finally {
