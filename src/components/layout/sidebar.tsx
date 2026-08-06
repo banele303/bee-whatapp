@@ -423,49 +423,6 @@ export function Sidebar({
                   );
                 })}
               </ul>
-
-              {/* Reference Image Widgets: Latest Update & Plan Usage */}
-              <div className="mt-4 space-y-3 px-1">
-                <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
-                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Latest update</div>
-                  <div className="mt-1 text-[11px] font-medium text-foreground leading-tight">
-                    LiveFile: upload and share files in collaborative apps
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">Plan usage</span>
-                    <span className="rounded border border-border bg-background px-1 text-[9px] font-bold text-muted-foreground">FREE</span>
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px]">
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <span>Realtime collab. min.</span>
-                      <span className="font-semibold text-foreground">0/3K</span>
-                    </div>
-                    <div className="h-1 w-full rounded-full bg-border overflow-hidden">
-                      <div className="h-full bg-primary w-0" />
-                    </div>
-
-                    <div className="flex items-center justify-between text-muted-foreground pt-1">
-                      <span>Comments created</span>
-                      <span className="font-semibold text-foreground">0/200</span>
-                    </div>
-                    <div className="h-1 w-full rounded-full bg-border overflow-hidden">
-                      <div className="h-full bg-primary w-0" />
-                    </div>
-
-                    <div className="flex items-center justify-between text-muted-foreground pt-1">
-                      <span>Data storage updates</span>
-                      <span className="font-semibold text-foreground">0/3M</span>
-                    </div>
-                    <div className="h-1 w-full rounded-full bg-border overflow-hidden">
-                      <div className="h-full bg-primary w-0" />
-                    </div>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </nav>

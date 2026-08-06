@@ -56,6 +56,7 @@
     "@liveblocks/react": "^3.23.0",
     "@liveblocks/react-flow": "^3.23.0",
     "@liveblocks/react-ui": "^3.23.0",
+    "@sentdm/sentdm": "^0.32.0",
     "@sentry/nextjs": "^10.68.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.107.0",
