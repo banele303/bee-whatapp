@@ -33,13 +33,37 @@ export function WorkflowRunsProvider({
   accessToken,
   children,
 }: WorkflowRunsProviderProps) {
+  if (!accessToken || !accessToken.trim()) {
+    const fallbackValue = useMemo<WorkflowRunsContextValue>(
+      () => ({ runs: [] }),
+      []
+    )
+    return (
+      <WorkflowRunsContext.Provider value={fallbackValue}>
+        {children}
+      </WorkflowRunsContext.Provider>
+    )
+  }
+
+  return (
+    <WorkflowRunsProviderInternal workflowId={workflowId} accessToken={accessToken}>
+      {children}
+    </WorkflowRunsProviderInternal>
+  )
+}
+
+function WorkflowRunsProviderInternal({
+  workflowId,
+  accessToken,
+  children,
+}: WorkflowRunsProviderProps) {
   const { runs, error } = useRealtimeRunsWithTag<typeof runWorkflowTask>(
     `workflow:${workflowId}`,
     { accessToken }
   )
 
   const value = useMemo<WorkflowRunsContextValue>(
-    () => ({ runs, error }),
+    () => ({ runs: runs || [], error }),
     [runs, error]
   )
 
