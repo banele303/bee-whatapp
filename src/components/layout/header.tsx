@@ -45,13 +45,30 @@ interface HeaderProps {
 
 import { useTranslations } from "next-intl";
 
-import { Search, HelpCircle, ExternalLink, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Search, MessageSquare, Star, X, Send } from "lucide-react";
 
 export function Header({ onOpenSidebar }: HeaderProps) {
   const t = useTranslations("Header");
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
   const titleKey = getPageTitleKey(pathname);
+
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    toast.success("Thank you for your feedback!");
+    setSubmitting(false);
+    setShowFeedbackModal(false);
+    setFeedbackText("");
+  };
 
   const initial =
     profile?.full_name?.charAt(0)?.toUpperCase() ??
@@ -99,32 +116,91 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           </kbd>
         </div>
 
-        {/* Action Buttons matching reference image */}
-        <a
-          href="https://discord.com"
-          target="_blank"
-          rel="noreferrer"
-          className="hidden lg:flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          className="hidden sm:flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer shadow-xs"
         >
-          <HelpCircle className="h-3.5 w-3.5" />
-          <span>Get help on Discord</span>
-        </a>
-
-        <a
-          href="https://docs.wacrm.io"
-          target="_blank"
-          rel="noreferrer"
-          className="hidden lg:flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          <span>Documentation</span>
-        </a>
-
-        <button className="hidden sm:flex items-center rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-          Feedback
+          <MessageSquare className="h-3.5 w-3.5" />
+          <span>Feedback</span>
         </button>
 
         <ModeToggle />
+
+        {/* Feedback Modal Overlay */}
+        {showFeedbackModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">Share Feedback</h3>
+                    <p className="text-xs text-muted-foreground">Help us improve your WhatsApp AI CRM</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFeedbackModal(false)}
+                  className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitFeedback} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">How is your experience?</label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className={`p-1.5 rounded-lg transition-transform hover:scale-110 ${
+                          star <= rating ? "text-amber-400" : "text-muted-foreground/30"
+                        }`}
+                      >
+                        <Star className="h-6 w-6 fill-current" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Your Comments or Feature Request</label>
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder="Tell us what feature you'd like to see or what we can improve..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-muted/40 p-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFeedbackModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || !feedbackText.trim()}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md disabled:opacity-50 cursor-pointer"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>{submitting ? "Submitting..." : "Send Feedback"}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger
