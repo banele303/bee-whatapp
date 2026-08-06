@@ -15,6 +15,14 @@ export function Room({
   roomId: string
   children: ReactNode
 }) {
+  const isLiveblocksConfigured = Boolean(
+    process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY || process.env.LIVEBLOCKS_SECRET_KEY
+  )
+
+  if (!isLiveblocksConfigured) {
+    return <>{children}</>
+  }
+
   return (
     <LiveblocksProvider
       throttle={16}
@@ -37,7 +45,6 @@ export function Room({
         }
       }}
     >
-
       <RoomProvider id={roomId}>
         <ClientSideSuspense
           fallback={
