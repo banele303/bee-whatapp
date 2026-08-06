@@ -42,17 +42,29 @@ export async function loadAiConfig(
 
   if (error) throw error
   if (!data || !data.api_key) {
-    if (process.env.DEEPSEEK_API_KEY) {
+    const fallbackKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
+    const fallbackProvider = process.env.DEEPSEEK_API_KEY
+      ? 'deepseek'
+      : process.env.OPENAI_API_KEY
+        ? 'openai'
+        : 'anthropic'
+    const fallbackModel = process.env.DEEPSEEK_API_KEY
+      ? 'deepseek-chat'
+      : process.env.OPENAI_API_KEY
+        ? 'gpt-4o'
+        : 'claude-3-5-sonnet-20241022'
+
+    if (fallbackKey) {
       return {
-        provider: 'deepseek',
-        model: 'deepseek-chat',
-        apiKey: process.env.DEEPSEEK_API_KEY,
-        systemPrompt: null,
+        provider: fallbackProvider as 'deepseek' | 'openai' | 'anthropic',
+        model: fallbackModel,
+        apiKey: fallbackKey,
+        systemPrompt: 'You are an intelligent WhatsApp CRM assistant for customer support and sourcing. Answer customer queries clearly, politely, and accurately.',
         isActive: true,
         autoReplyEnabled: true,
-        autoReplyMaxPerConversation: 3,
+        autoReplyMaxPerConversation: 10,
         handoffAgentId: null,
-        embeddingsApiKey: null,
+        embeddingsApiKey: fallbackKey,
       }
     }
     return null

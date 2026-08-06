@@ -15,9 +15,8 @@ export function Room({
   roomId: string
   children: ReactNode
 }) {
-  const isLiveblocksConfigured = Boolean(
-    process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY || process.env.LIVEBLOCKS_SECRET_KEY
-  )
+  const publicKey = process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY || ""
+  const isLiveblocksConfigured = Boolean(publicKey && publicKey.startsWith("pk_") && publicKey !== "pk_test_mock")
 
   if (!isLiveblocksConfigured) {
     return <>{children}</>

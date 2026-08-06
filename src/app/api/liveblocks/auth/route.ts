@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fallback immediately if no valid Liveblocks key is set in env
     const secretKey = process.env.LIVEBLOCKS_SECRET_KEY || ''
+    // If Liveblocks secret key is missing or mock, return 403 so client SDK stops auth loop
     if (!secretKey || secretKey === 'sk_test_mock' || !secretKey.startsWith('sk_')) {
-      return NextResponse.json({ token: `mock_liveblocks_token_${Date.now()}` })
+      return NextResponse.json({ error: 'Liveblocks unconfigured' }, { status: 403 })
     }
 
     const { data: profile } = await supabase
@@ -39,13 +39,8 @@ export async function POST(req: NextRequest) {
     session.allow(`wf-*`, session.FULL_ACCESS)
 
     const { status, body } = await session.authorize()
-    if (status >= 400) {
-      return NextResponse.json({ token: `mock_liveblocks_token_${Date.now()}` })
-    }
-
-    return new NextResponse(body, { status: 200 })
+    return new NextResponse(body, { status })
   } catch (err: any) {
-    console.warn('Liveblocks Auth fallback active:', err?.message)
-    return NextResponse.json({ token: `mock_liveblocks_token_${Date.now()}` })
+    return NextResponse.json({ error: 'Liveblocks error' }, { status: 403 })
   }
 }
