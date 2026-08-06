@@ -129,7 +129,7 @@ export const createQuoteTool = (accountId: string, contactId?: string) => ({
       total, 
       customerName,
       phoneNumber: phoneNumber || null,
-      message: `Quote *${quoteNumber}* created for *${customerName}* (Total: *R ${total.toFixed(2)}* incl. 15% VAT).\nPDF Document: ${pdfUrl}`
+      message: `Quote *${quoteNumber}* created for *${customerName}* (Total: *R ${total.toFixed(2)}* incl. 15% VAT).`
     }
   }
 })

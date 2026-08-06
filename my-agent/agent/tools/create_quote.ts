@@ -62,8 +62,8 @@ export const createQuote = {
       quoteId: quote.id,
       quoteNumber,
       total,
-      pdfUrl: `${appUrl}/api/quotes/${quote.id}/download`,
-      message: `Quote *${quoteNumber}* created for *${customerName}* (Total: *R ${total.toFixed(2)}* incl. VAT). PDF document dispatched!`,
+      pdfUrl: `${appUrl}/api/quotes/${quote.id}/download/Quotation-${quote.quote_number}.pdf`,
+      message: `Quote *${quoteNumber}* created for *${customerName}* (Total: *R ${total.toFixed(2)}* incl. VAT).`,
     }
   },
 }

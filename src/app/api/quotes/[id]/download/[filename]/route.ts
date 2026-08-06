@@ -4,7 +4,7 @@ import PDFDocument from 'pdfkit'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; filename: string }> }
 ) {
   try {
     const { id } = await params
@@ -33,19 +33,14 @@ export async function GET(
       day: 'numeric',
     })
 
-    // Create a new PDF document
     const doc = new PDFDocument({ margin: 50, size: 'A4' })
-    
-    // Collect PDF chunks
     const chunks: Buffer[] = []
     doc.on('data', (chunk) => chunks.push(chunk))
 
-    // Wait for the PDF to finish generating
     const pdfPromise = new Promise<Buffer>((resolve) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)))
     })
 
-    // --- Header ---
     doc.fontSize(22).font('Helvetica-Bold').text(businessName, { align: 'right' })
     doc.fontSize(10).font('Helvetica').fillColor('gray').text('Premium Auto Parts & Accessories • South Africa', { align: 'right' })
     doc.moveDown(2)
@@ -58,7 +53,6 @@ export async function GET(
     }
     doc.moveDown(2)
 
-    // --- Table Header ---
     const tableTop = doc.y
     doc.font('Helvetica-Bold').fontSize(10)
     doc.text('Item Description', 50, tableTop)
@@ -72,7 +66,6 @@ export async function GET(
     let y = tableTop + 25
     doc.font('Helvetica').fontSize(10)
 
-    // --- Table Rows ---
     for (const item of (quote.items || [])) {
       const desc = item.description || item.name || 'Auto Part'
       const sku = item.sku || 'N/A'
@@ -87,7 +80,6 @@ export async function GET(
       doc.text(lineTotal, 480, y, { width: 70, align: 'right' })
       
       y += 22
-      
       if (y > 700) {
         doc.addPage()
         y = 50
@@ -97,7 +89,6 @@ export async function GET(
     doc.moveTo(50, y + 5).lineTo(550, y + 5).stroke()
     y += 20
 
-    // --- Totals ---
     doc.font('Helvetica-Bold')
     doc.text('Subtotal:', 380, y, { width: 90, align: 'right' })
     doc.text(`R ${Number(quote.subtotal || 0).toFixed(2)}`, 480, y, { width: 70, align: 'right' })
@@ -114,7 +105,6 @@ export async function GET(
     doc.moveDown(3)
     doc.fontSize(9).font('Helvetica-Oblique').fillColor('gray').text('Thank you for your business! This quotation is valid for 14 days.', 50, doc.y, { align: 'center' })
 
-    // Finalize the PDF
     doc.end()
     
     const pdfBuffer = await pdfPromise
