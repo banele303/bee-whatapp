@@ -9,13 +9,22 @@ export async function GET(
     const { id } = await params
     const db = supabaseAdmin()
 
-    const { data: quote, error } = await db
+    let { data: quote, error } = await db
       .from('quotes_and_invoices')
       .select('*')
       .eq('id', id)
       .maybeSingle()
 
-    if (error || !quote) {
+    if (!quote) {
+      const { data: qByNum } = await db
+        .from('quotes_and_invoices')
+        .select('*')
+        .eq('quote_number', id)
+        .maybeSingle()
+      quote = qByNum
+    }
+
+    if (!quote) {
       return new NextResponse('Quotation not found', { status: 404 })
     }
 
