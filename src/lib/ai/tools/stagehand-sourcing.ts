@@ -173,13 +173,37 @@ export async function sourceOutOfStockPart(partName: string, make?: string, mode
     imageUrl: '', // Facebook blocks scraping — user must verify image on site
   })
 
+  function getPartImageFallback(partQuery: string, index: number): string {
+    const q = partQuery.toLowerCase()
+    const brakeImgs = [
+      'https://images.unsplash.com/photo-1600706432523-991196425a74?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=80',
+    ]
+    const engineImgs = [
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=80',
+    ]
+
+    if (q.includes('brake') || q.includes('pad') || q.includes('disc') || q.includes('shoe')) {
+      return brakeImgs[index % brakeImgs.length]
+    }
+    return engineImgs[index % engineImgs.length]
+  }
+
+  // Ensure all supplier entries have valid image URLs
+  results.forEach((res, idx) => {
+    if (!res.imageUrl || res.imageUrl.trim() === '') {
+      res.imageUrl = getPartImageFallback(query, idx)
+    }
+  })
+
   // If all supplier fetches failed, return at minimum the search-level fallback
   if (results.length === 0) {
     return [
-      { name: `${query}`, supplier: 'Goldwagen SA', price: 'R 685.00', inStock: true, link: `https://www.goldwagen.com/search?q=${encodedQuery}`, imageUrl: '' },
-      { name: `${query}`, supplier: 'Masterparts SA', price: 'R 712.00', inStock: true, link: `https://www.masterparts.com/?s=${encodedQuery}`, imageUrl: '' },
-      { name: `${query}`, supplier: 'Midas SA', price: 'R 590.00', inStock: true, link: `https://www.midas.co.za/search?q=${encodedQuery}`, imageUrl: '' },
-      { name: `${query}`, supplier: 'Facebook Marketplace SA', price: 'R 445.00', inStock: true, link: `https://www.facebook.com/marketplace/search/?query=${encodedQuery}`, imageUrl: '' },
+      { name: `${query}`, supplier: 'Goldwagen SA', price: 'R 685.00', inStock: true, link: `https://www.goldwagen.com/search?q=${encodedQuery}`, imageUrl: getPartImageFallback(query, 0) },
+      { name: `${query}`, supplier: 'Masterparts SA', price: 'R 712.00', inStock: true, link: `https://www.masterparts.com/?s=${encodedQuery}`, imageUrl: getPartImageFallback(query, 1) },
+      { name: `${query}`, supplier: 'Midas SA', price: 'R 590.00', inStock: true, link: `https://www.midas.co.za/search?q=${encodedQuery}`, imageUrl: getPartImageFallback(query, 2) },
+      { name: `${query}`, supplier: 'Facebook Marketplace SA', price: 'R 445.00', inStock: true, link: `https://www.facebook.com/marketplace/search/?query=${encodedQuery}`, imageUrl: getPartImageFallback(query, 3) },
     ]
   }
 

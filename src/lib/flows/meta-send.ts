@@ -94,8 +94,6 @@ export async function engineSendText(
 
   const accessToken = decrypt(config.access_token)
 
-import { sendSendDmText, sendSendDmMedia } from '@/lib/whatsapp/senddm-api'
-
   const attempt = async (phone: string): Promise<string> => {
     if (config.phone_number_id === 'senddm' || (config as any).provider === 'senddm') {
       const r = await sendSendDmText({
