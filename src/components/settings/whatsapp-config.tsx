@@ -72,6 +72,26 @@ export function WhatsAppConfig() {
   const [providerMode, setProviderMode] = useState<'senddm' | 'meta'>('senddm');
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [loadingQr, setLoadingQr] = useState(false);
+
+  const handleFetchQrCode = async () => {
+    setLoadingQr(true);
+    try {
+      const res = await fetch('/api/whatsapp/qr');
+      const data = await res.json();
+      if (data.qr) {
+        setQrCodeUrl(data.qr);
+        toast.success('Pairing QR Code generated!');
+      } else {
+        toast.error('Failed to load QR code');
+      }
+    } catch {
+      toast.error('Error fetching QR code');
+    } finally {
+      setLoadingQr(false);
+    }
+  };
 
   // True once /register has succeeded on Meta's side (timestamp set
   // in the row). When false, the saved config is metadata-only and
@@ -585,13 +605,13 @@ export function WhatsAppConfig() {
         <Card className="border-emerald-500/20 bg-card">
           <CardHeader>
             <CardTitle className="text-foreground flex items-center justify-between">
-              <span>WhatsApp Connector Channel</span>
+              <span>WhatsApp Connection Method</span>
               <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
-                {providerMode === 'senddm' ? '⚡ Built-In Direct DM Active' : '🏢 Meta Cloud API Active'}
+                {providerMode === 'senddm' ? '⚡ 1-Click Built-In Active' : '🏢 Meta Cloud API Active'}
               </span>
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Choose how your SaaS connects to WhatsApp. You can use our built-in Direct DM connector for quick 1-click setup or Meta Cloud API for enterprise.
+              Choose how your business connects to WhatsApp. Use our built-in 1-click connector for instant QR code setup or Meta Cloud API for enterprise.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -610,10 +630,10 @@ export function WhatsAppConfig() {
               >
                 <div className="flex items-center gap-2 font-bold text-sm text-foreground mb-1">
                   <Zap className="size-4 text-emerald-400" />
-                  Direct DM Connector
+                  1-Click Direct Connector
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Built-in 1-click setup. Keep existing number, no Meta App approval required.
+                  Built-in 1-click QR setup. Keep your existing phone number, zero Meta developer configuration required.
                 </p>
               </button>
 
@@ -645,51 +665,48 @@ export function WhatsAppConfig() {
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground">
-              {providerMode === 'senddm' ? '⚡ Direct DM Configuration' : t('apiCredentialsTitle')}
+              {providerMode === 'senddm' ? '⚡ 1-Click WhatsApp Direct Connector' : t('apiCredentialsTitle')}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               {providerMode === 'senddm'
-                ? 'Configure your built-in Direct DM credentials and test sending PDF quotes directly to your phone.'
+                ? 'Scan the QR code below with WhatsApp (Linked Devices) on your phone to connect your account instantly.'
                 : t('apiCredentialsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {providerMode === 'senddm' ? (
               <>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Direct DM Instance Token / API Key</Label>
-                  <div className="relative">
-                    <Input
-                      type={showToken ? 'text' : 'password'}
-                      placeholder="e.g. sdm_live_key_982347293"
-                      value={accessToken}
-                      onChange={(e) => {
-                        setAccessToken(e.target.value);
-                        setTokenEdited(true);
-                      }}
-                      onFocus={() => {
-                        if (accessToken === MASKED_TOKEN) {
-                          setAccessToken('');
-                          setTokenEdited(true);
+                <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-4 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="p-3 rounded-2xl bg-white text-zinc-950 shadow-xl border border-zinc-200">
+                      <img
+                        src={
+                          qrCodeUrl ||
+                          `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=WACRM-PAIR-${accountId || 'demo'}`
                         }
-                      }}
-                      className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowToken(!showToken)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
+                        alt="WhatsApp Pairing QR Code"
+                        className="w-48 h-48 object-contain rounded-lg"
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2 max-w-sm">
+                      <p className="font-semibold text-foreground mb-1">📱 How to pair your phone:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-left">
+                        <li>Open <strong>WhatsApp</strong> on your phone</li>
+                        <li>Tap <strong>Settings ➔ Linked Devices</strong></li>
+                        <li>Tap <strong>Link a Device</strong> and scan this QR code</li>
+                      </ol>
+                    </div>
                   </div>
-                </div>
 
-                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-200">
-                  <p className="font-semibold mb-1">📩 Built-in Direct DM Webhook URL:</p>
-                  <code className="text-[11px] bg-background/50 px-2 py-1 rounded block text-foreground overflow-x-auto select-all">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/senddm` : ''}
-                  </code>
+                  <Button
+                    type="button"
+                    onClick={handleFetchQrCode}
+                    disabled={loadingQr}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs gap-2"
+                  >
+                    {loadingQr ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                    <span>Refresh Pairing QR Code</span>
+                  </Button>
                 </div>
               </>
             ) : (
