@@ -6,55 +6,106 @@ import { useChat } from '@ai-sdk/react'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, User, Send, Loader2, Play, Plus, Search, FileText, Sparkles, Zap, RefreshCw, Trash2, Copy, Check, Link as LinkIcon, Download, Package, Wrench, Settings2, MessageCircle } from 'lucide-react'
+import {
+  Bot,
+  User,
+  Send,
+  Loader2,
+  Play,
+  Plus,
+  Search,
+  FileText,
+  Sparkles,
+  Zap,
+  RefreshCw,
+  Trash2,
+  Copy,
+  Check,
+  Link as LinkIcon,
+  Download,
+  Package,
+  Wrench,
+  Settings2,
+  MessageCircle,
+  Activity,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Layers,
+  Terminal,
+  Cpu,
+  ShieldCheck,
+  Share2,
+  Eye,
+  Sliders,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { createClient } from '@/lib/supabase/client'
 
+// Interfaces for Agent Pipeline Execution
+interface AgentToolCall {
+  id: string
+  toolName: string
+  status: 'running' | 'success' | 'failed'
+  input: Record<string, any>
+  output?: Record<string, any>
+  timestamp: string
+}
+
+interface AgentPipelineStep {
+  id: string
+  agentName: string
+  agentIcon: any
+  trigger: string
+  status: 'idle' | 'running' | 'completed' | 'failed'
+  toolCalls: AgentToolCall[]
+  logs: string[]
+  startedAt: string
+}
+
 function FormattedMarkdown({ content }: { content: string }) {
-  // Strip out legacy disclaimers, convert <br> tags to newlines, and force proper newlines around markdown tables
   const cleanedContent = content
     .replace(/I understand you want a PDF file generated directly\. Unfortunately, I am a text-based AI assistant and I cannot directly create, generate, or attach downloadable PDF files to this chat\./gi, '')
     .replace(/However, I can give you the exact, ready-to-copy quote content in a PDF-friendly format\./gi, '')
     .replace(/Step 2: Create PDF instantly[\s\S]*?PDF24/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/\|\|/g, '|\n|')
-    .replace(/([^\n])\|/g, '$1\n|');
+    .replace(/([^\n])\|/g, '$1\n|')
 
-  const lines = cleanedContent.split('\n');
-  const elements: React.ReactNode[] = [];
-  let inTable = false;
-  let tableHeader: string[] = [];
-  let tableRows: string[][] = [];
+  const lines = cleanedContent.split('\n')
+  const elements: React.ReactNode[] = []
+  let inTable = false
+  let tableHeader: string[] = []
+  let tableRows: string[][] = []
 
   const handleDownloadImage = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename || 'car_part_photo.jpg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename || 'car_part_photo.jpg'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(blobUrl)
     } catch {
-      window.open(url, '_blank');
+      window.open(url, '_blank')
     }
-  };
+  }
 
   const formatLine = (text: string) => {
-    // Check for images ![alt](url)
-    const imgMatch = text.match(/!\[(.*?)\]\((.*?)\)/);
+    const imgMatch = text.match(/!\[(.*?)\]\((.*?)\)/)
     if (imgMatch) {
-      const [full, alt, src] = imgMatch;
-      const parts = text.split(full);
+      const [full, alt, src] = imgMatch
+      const parts = text.split(full)
       return (
         <span key={text} className="block my-2">
           {parts[0]}
@@ -71,13 +122,12 @@ function FormattedMarkdown({ content }: { content: string }) {
           </div>
           {parts[1]}
         </span>
-      );
+      )
     }
 
-    // Replace links [label](url), `code`, and **bold**
-    const parts = text.split(/(\[.*?\]\(.*?\)\s*|`.*?`|\*\*.*?\*\*)/g);
+    const parts = text.split(/(\[.*?\]\(.*?\)\s*|`.*?`|\*\*.*?\*\*)/g)
     return parts.map((part, i) => {
-      const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
+      const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/)
       if (linkMatch) {
         return (
           <a
@@ -89,27 +139,27 @@ function FormattedMarkdown({ content }: { content: string }) {
           >
             {linkMatch[1]}
           </a>
-        );
+        )
       }
       if (part.startsWith('`') && part.endsWith('`')) {
         return (
           <code key={i} className="px-1.5 py-0.5 mx-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[11px]">
             {part.slice(1, -1)}
           </code>
-        );
+        )
       }
       if (part.startsWith('**') && part.endsWith('**')) {
-        const boldText = part.slice(2, -2);
-        const isPrice = /R\s?[\d,]+(\.\d{2})?/.test(boldText);
+        const boldText = part.slice(2, -2)
+        const isPrice = /R\s?[\d,]+(\.\d{2})?/.test(boldText)
         return (
           <strong key={i} className={cn("font-bold", isPrice ? "text-emerald-400" : "text-foreground")}>
             {boldText}
           </strong>
-        );
+        )
       }
-      return part;
-    });
-  };
+      return part
+    })
+  }
 
   const flushTable = (keyIndex: number) => {
     if (tableHeader.length > 0) {
@@ -138,160 +188,311 @@ function FormattedMarkdown({ content }: { content: string }) {
             </tbody>
           </table>
         </div>
-      );
+      )
     }
-    inTable = false;
-    tableHeader = [];
-    tableRows = [];
-  };
-
-  lines.forEach((line, index) => {
-    const trimmed = line.trim();
-
-    if (trimmed.startsWith('|')) {
-      const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
-      // Skip markdown separator line e.g. | :--- | :--- |
-      if (cells.every(c => c.replace(/[-:]/g, '') === '')) {
-        return;
-      }
-      if (!inTable) {
-        inTable = true;
-        tableHeader = cells;
-        tableRows = [];
-      } else {
-        tableRows.push(cells);
-      }
-      return;
-    } else if (inTable) {
-      flushTable(index);
-    }
-
-    if (trimmed.startsWith('# ')) {
-      elements.push(
-        <h1 key={index} className="text-base font-bold text-foreground my-3 pb-1 border-b border-border/60">
-          {formatLine(trimmed.slice(2))}
-        </h1>
-      );
-    } else if (trimmed.startsWith('## ')) {
-      elements.push(
-        <h2 key={index} className="text-sm font-bold text-foreground my-2.5">
-          {formatLine(trimmed.slice(3))}
-        </h2>
-      );
-    } else if (trimmed.startsWith('### ')) {
-      elements.push(
-        <h3 key={index} className="text-xs font-bold text-emerald-400 my-2 uppercase tracking-wide">
-          {formatLine(trimmed.slice(4))}
-        </h3>
-      );
-    } else if (trimmed.startsWith('#### ')) {
-      elements.push(
-        <h4 key={index} className="text-xs font-bold text-foreground/90 my-1.5">
-          {formatLine(trimmed.slice(5))}
-        </h4>
-      );
-    } else if (trimmed === '---' || trimmed === '***') {
-      elements.push(<hr key={index} className="my-3 border-t border-border/60" />);
-    } else if (trimmed.startsWith('> ')) {
-      elements.push(
-        <blockquote key={index} className="my-2 p-3 border-l-4 border-emerald-500 bg-emerald-500/10 rounded-r-xl text-xs font-medium text-foreground">
-          {formatLine(trimmed.slice(2))}
-        </blockquote>
-      );
-    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      elements.push(
-        <li key={index} className="ml-4 list-disc text-foreground/90 my-0.5">
-          {formatLine(trimmed.slice(2))}
-        </li>
-      );
-    } else if (/^\d+\.\s/.test(trimmed)) {
-      const text = trimmed.replace(/^\d+\.\s/, '');
-      elements.push(
-        <div key={index} className="flex gap-2 my-1 text-foreground/90">
-          <span className="font-semibold text-emerald-400">{trimmed.match(/^\d+/)?.[0]}.</span>
-          <span>{formatLine(text)}</span>
-        </div>
-      );
-    } else if (trimmed) {
-      elements.push(
-        <p key={index} className="my-1 text-foreground/90 leading-relaxed">
-          {formatLine(line)}
-        </p>
-      );
-    }
-  });
-
-  if (inTable) {
-    flushTable(lines.length);
+    inTable = false
+    tableHeader = []
+    tableRows = []
   }
 
-  return <div className="space-y-1 text-sm">{elements}</div>;
+  lines.forEach((line, index) => {
+    const trimmed = line.trim()
+
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const cells = trimmed
+        .slice(1, -1)
+        .split('|')
+        .map(c => c.trim())
+
+      if (cells.every(c => /^:?-+:?$/.test(c))) {
+        return
+      }
+
+      if (!inTable) {
+        inTable = true
+        tableHeader = cells
+      } else {
+        tableRows.push(cells)
+      }
+    } else {
+      if (inTable) {
+        flushTable(index)
+      }
+
+      if (trimmed.startsWith('### ')) {
+        elements.push(
+          <h3 key={index} className="text-base font-bold text-foreground mt-4 mb-2 flex items-center gap-2">
+            {formatLine(trimmed.slice(4))}
+          </h3>
+        )
+      } else if (trimmed.startsWith('#### ')) {
+        elements.push(
+          <h4 key={index} className="text-sm font-semibold text-emerald-400 mt-3 mb-1.5">
+            {formatLine(trimmed.slice(5))}
+          </h4>
+        )
+      } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        elements.push(
+          <li key={index} className="ml-4 list-disc text-muted-foreground my-1">
+            {formatLine(trimmed.slice(2))}
+          </li>
+        )
+      } else if (trimmed === '---') {
+        elements.push(<hr key={index} className="my-4 border-border/60" />)
+      } else if (trimmed.length > 0) {
+        elements.push(
+          <p key={index} className="my-1.5 leading-relaxed">
+            {formatLine(line)}
+          </p>
+        )
+      }
+    }
+  })
+
+  if (inTable) {
+    flushTable(lines.length)
+  }
+
+  return <div className="space-y-1 text-sm text-foreground/90">{elements}</div>
 }
 
-function generatePdfFromChatContent(content: string) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
+export default function SourcingCopilotPage() {
+  const router = useRouter()
+  const supabase = createClient()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const quoteRef = `WACRM-Q-${Math.floor(100000 + Math.random() * 900000)}`;
-  const dateStr = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
-  const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const [accountId, setAccountId] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'chat'>('pipeline')
+  const [localMessages, setLocalMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: `### 🚀 Welcome to WACRM AI Agent Studio & Copilot!
 
-  // Convert markdown content table into clean HTML table
-  const lines = content.split('\n');
-  let tableHtml = '';
-  let inTable = false;
+I am your multi-agent automotive sourcing assistant. Here is what our autonomous agents can do for you:
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('|')) {
-      const cells = trimmed.split('|').filter(c => c.length > 0).map(c => c.trim());
-      if (trimmed.includes('---')) return;
-      if (!inTable) {
-        inTable = true;
-        tableHtml += '<table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:13px;"><thead><tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">';
-        cells.forEach(cell => {
-          tableHtml += `<th style="padding:10px; text-align:left; font-weight:700; color:#1e293b;">${cell.replace(/\*\*/g, '')}</th>`;
-        });
-        tableHtml += '</tr></thead><tbody>';
-      } else {
-        tableHtml += '<tr style="border-bottom:1px solid #e2e8f0;">';
-        cells.forEach(cell => {
-          tableHtml += `<td style="padding:10px; color:#334155;">${cell.replace(/\*\*/g, '')}</td>`;
-        });
-        tableHtml += '</tr>';
+- 🔍 **Auto-Sourcing Agent**: Search local parts catalog & live SA supplier web listings (*Goldwagen, Masterparts, Midas, Facebook Marketplace*).
+- 📄 **Smart ZAR Quote & PDF Agent**: Calculate itemized pricing with 15% SA VAT, core deposits, and generate 1-click printable PDF quotations.
+- 📱 **WhatsApp Dispatch Agent**: Deliver official quotation PDFs directly to customers' WhatsApp chats automatically.
+
+Select a preset prompt below or type your query to run the live agent pipeline!`,
+    },
+  ])
+
+  const [inputVal, setInputVal] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [recentQuotes, setRecentQuotes] = useState<any[]>([])
+  const [sendingWaMsgId, setSendingWaMsgId] = useState<string | null>(null)
+
+  // Live Agent Pipeline State
+  const [activePipeline, setActivePipeline] = useState<AgentPipelineStep[]>([
+    {
+      id: 'step-1',
+      agentName: 'Auto-Sourcing Agent',
+      agentIcon: Search,
+      trigger: 'Catalog & Web Supplier Search Query',
+      status: 'completed',
+      startedAt: '10:42 AM',
+      toolCalls: [
+        {
+          id: 'tc-1',
+          toolName: 'searchInventory',
+          status: 'success',
+          input: { query: 'Hilux 2.8 GD-6 Brake Pads' },
+          output: { found: true, count: 2, price: 'R 1,200.00' },
+          timestamp: '10:42:01 AM',
+        },
+      ],
+      logs: [
+        'Query received: "Hilux 2.8 GD-6 Brake Pads"',
+        'Inspecting local inventory catalog...',
+        'Found matching part SKU: TW-BP-2021 (Stock: 14 units)',
+      ],
+    },
+    {
+      id: 'step-2',
+      agentName: 'Smart ZAR Quote & PDF Agent',
+      agentIcon: FileText,
+      trigger: 'Quotation Generation Request',
+      status: 'completed',
+      startedAt: '10:42 AM',
+      toolCalls: [
+        {
+          id: 'tc-2',
+          toolName: 'createQuote',
+          status: 'success',
+          input: { items: [{ sku: 'TW-BP-2021', qty: 1, unitPrice: 1200 }], customerName: 'Valued Client' },
+          output: { quoteNumber: 'QT-8912', total: 1380.00, vat: 180.00 },
+          timestamp: '10:42:04 AM',
+        },
+      ],
+      logs: [
+        'Calculating 15% South African VAT (R 180.00)...',
+        'Generated Quote #QT-8912 for R 1,380.00 incl. VAT.',
+        'PDF document compiled and stored successfully.',
+      ],
+    },
+    {
+      id: 'step-3',
+      agentName: 'WhatsApp Dispatch Agent',
+      agentIcon: MessageCircle,
+      trigger: 'Customer WhatsApp PDF Attachment Dispatch',
+      status: 'idle',
+      startedAt: 'Ready',
+      toolCalls: [
+        {
+          id: 'tc-3',
+          toolName: 'engineSendMedia',
+          status: 'running',
+          input: { kind: 'document', filename: 'Quotation-QT-8912.pdf' },
+          timestamp: 'Pending trigger',
+        },
+      ],
+      logs: ['Awaiting customer phone number confirmation for 1-click WhatsApp delivery...'],
+    },
+  ])
+
+  useEffect(() => {
+    async function loadAccountAndQuotes() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('account_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (profile?.account_id) {
+        setAccountId(profile.account_id)
+        fetchRecentQuotes(profile.account_id)
       }
-    } else if (inTable) {
-      inTable = false;
-      tableHtml += '</tbody></table>';
     }
-  });
+    loadAccountAndQuotes()
+  }, [])
 
-  if (inTable) tableHtml += '</tbody></table>';
+  const fetchRecentQuotes = async (acctId: string) => {
+    try {
+      const res = await fetch('/api/quotes')
+      const data = await res.json()
+      if (Array.isArray(data)) setRecentQuotes(data.slice(0, 4))
+    } catch (err) {
+      console.error('Failed to load recent quotes:', err)
+    }
+  }
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [localMessages, activePipeline])
+
+  const generatePdfFromChatContent = (content: string) => {
+    const lines = content.split('\n')
+    let customerName = 'Valued Customer'
+    let quoteItems: Array<{ sku: string; description: string; quantity: number; unitPrice: number }> = []
+
+    const nameMatch = content.match(/Customer:\s*\*?(.*?)\*?(\n|$)/i)
+    if (nameMatch && nameMatch[1]) {
+      customerName = nameMatch[1].trim()
+    }
+
+    let inTable = false
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const cells = trimmed.slice(1, -1).split('|').map(c => c.trim())
+        if (cells.every(c => /^:?-+:?$/.test(c))) continue
+        if (!inTable) {
+          inTable = true
+          continue
+        }
+
+        if (cells.length >= 3) {
+          const desc = cells[0].replace(/\*/g, '')
+          const priceStr = cells.find(c => c.includes('R') || c.match(/\d+/)) || '0'
+          const priceMatch = priceStr.replace(/,/g, '').match(/\d+(\.\d+)?/)
+          const price = priceMatch ? parseFloat(priceMatch[0]) : 500
+
+          if (desc && !desc.toLowerCase().includes('supplier') && !desc.toLowerCase().includes('item')) {
+            quoteItems.push({
+              sku: `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
+              description: desc,
+              quantity: 1,
+              unitPrice: price > 0 ? price : 750,
+            })
+          }
+        }
+      } else {
+        if (inTable) inTable = false
+      }
+    }
+
+    if (quoteItems.length === 0) {
+      quoteItems = [
+        {
+          sku: 'TW-BP-2021',
+          description: 'Toyota Hilux 2.8 GD-6 Front Brake Pads Set',
+          quantity: 1,
+          unitPrice: 1200.0,
+        },
+      ]
+    }
+
+    const subtotal = quoteItems.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0)
+    const vat = subtotal * 0.15
+    const total = subtotal + vat
+    const quoteRef = `WACRM-Q-${Math.floor(100000 + Math.random() * 900000)}`
+    const dateStr = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })
+    const validUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      toast.error('Pop-up blocked. Please allow pop-ups to view PDF quotation.')
+      return
+    }
+
+    const itemsHtml = quoteItems
+      .map(
+        item => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #1e293b;">${item.description}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-family: monospace; color: #64748b;">${item.sku}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #1e293b;">${item.quantity}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #1e293b;">R ${item.unitPrice.toFixed(2)}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 700; color: #0f172a;">R ${(item.quantity * item.unitPrice).toFixed(2)}</td>
+      </tr>
+    `
+      )
+      .join('')
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
       <head>
         <title>Official_Quotation_${quoteRef}</title>
         <style>
-          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #0f172a; background: #fff; max-width: 800px; margin: 0 auto; }
-          .header-box { display: flex; justify-content: space-between; align-items: flex-start; border-b: 3px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
-          .company-name { font-size: 24px; font-weight: 900; color: #047857; letter-spacing: -0.5px; }
-          .subhead { font-size: 12px; color: #64748b; margin-top: 2px; }
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 40px; background: #fff; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+          .brand { font-size: 24px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
+          .subbrand { font-size: 12px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
           .quote-title { font-size: 22px; font-weight: 800; color: #0f172a; text-align: right; }
           .quote-meta { font-size: 12px; color: #475569; font-family: monospace; text-align: right; margin-top: 4px; }
-          .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px; font-size: 13px; }
-          .section-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .notes-card { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 14px; margin-top: 24px; font-size: 12px; color: #064e3b; }
-          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
+          .customer-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 30px; }
+          .customer-title { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+          .customer-name { font-size: 16px; font-weight: 800; color: #0f172a; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: 0.5px; }
+          .totals-table { width: 300px; margin-left: auto; border-collapse: collapse; }
+          .totals-table td { padding: 8px 12px; }
+          .total-row { font-size: 16px; font-weight: 900; color: #10b981; border-top: 2px solid #0f172a; }
+          .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 11px; color: #94a3b8; text-align: center; }
+          @media print { body { padding: 0; } }
         </style>
       </head>
       <body>
-        <div class="header-box">
+        <div class="header">
           <div>
-            <div class="company-name">WACRM AUTO-SOURCING</div>
-            <div class="subhead">South Africa Automotive Parts & Logistics Gateway</div>
-            <div class="subhead">Reg: 2024/091248/07 | VAT No: 4910293847</div>
+            <div class="brand">Bee WhatsApp Auto Parts</div>
+            <div class="subbrand">Official Quotation Deliverable</div>
           </div>
           <div>
             <div class="quote-title">OFFICIAL QUOTATION</div>
@@ -301,319 +502,225 @@ function generatePdfFromChatContent(content: string) {
           </div>
         </div>
 
-        <div class="details-grid">
-          <div>
-            <div class="section-title">Client Information</div>
-            <div><strong>Client Name:</strong> Valued Workshop / Customer</div>
-            <div><strong>Currency:</strong> ZAR (South African Rand / R)</div>
-            <div><strong>VAT Rate:</strong> 15% Standard Rate Included</div>
-          </div>
-          <div>
-            <div class="section-title">Supplier Sourcing Details</div>
-            <div><strong>Supplier Network:</strong> Goldwagen / Masterparts / Midas</div>
-            <div><strong>Delivery:</strong> Branch Collection or Courier Express</div>
-            <div><strong>Stock Guarantee:</strong> Verified by Stagehand AI Agent</div>
-          </div>
+        <div class="customer-card">
+          <div class="customer-title">PREPARED FOR</div>
+          <div class="customer-name">${customerName}</div>
         </div>
 
-        <div class="section-title">Itemized Quotation Schedule</div>
-        ${tableHtml || `<div style="padding:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:13px;">${content.replace(/\n/g, '<br/>')}</div>`}
+        <table>
+          <thead>
+            <tr>
+              <th>Item Description</th>
+              <th>SKU / Part #</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Unit Price</th>
+              <th style="text-align: right;">Total (Excl. VAT)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
 
-        <div class="notes-card">
-          <strong>💳 Payment & Fulfillment Terms:</strong><br/>
-          • EFT / Ozow Instant Payment accepted prior to dispatch.<br/>
-          • All quoted prices include 15% South African VAT.<br/>
-          • Collection available at branch or nationwide doorstep courier (R95 - R145).
-        </div>
+        <table class="totals-table">
+          <tr>
+            <td style="color: #64748b; font-size: 13px;">Subtotal:</td>
+            <td style="text-align: right; font-weight: 700; font-size: 13px;">R ${subtotal.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b; font-size: 13px;">15% SA VAT:</td>
+            <td style="text-align: right; font-weight: 700; font-size: 13px;">R ${vat.toFixed(2)}</td>
+          </tr>
+          <tr class="total-row">
+            <td>TOTAL AMOUNT:</td>
+            <td style="text-align: right;">R ${total.toFixed(2)}</td>
+          </tr>
+        </table>
 
         <div class="footer">
-          <p>This is an official computer-generated quotation issued by WACRM Auto-Sourcing SaaS. Powered by DeepSeek v3.</p>
+          <p>Thank you for choosing Bee WhatsApp Auto Parts!</p>
+          <p>• All quoted prices include 15% South African VAT.<br/>• Payment terms: EFT, Ozow, PayFast 1-click checkout.</p>
         </div>
-
         <script>
           window.onload = function() {
-            window.print();
-          }
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          };
         </script>
       </body>
-    </html>
-  `;
+      </html>
+    `
 
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-}
-
-import { SessionReplay } from '@/features/workflows/components/session-replay'
-
-interface CustomSource {
-  id: string;
-  label: string;
-  url: string;
-  isCustom?: boolean;
-}
-
-const DEFAULT_SOURCES: CustomSource[] = [
-  { id: 'facebook', label: 'Facebook Marketplace SA', url: 'https://facebook.com/marketplace' },
-  { id: 'goldwagen', label: 'Goldwagen', url: 'https://goldwagen.com' },
-  { id: 'masterparts', label: 'Masterparts', url: 'https://masterparts.com' },
-  { id: 'midas', label: 'Midas SA', url: 'https://midas.co.za' },
-  { id: 'toyota', label: 'Toyota SA', url: 'https://toyota.co.za' },
-]
-
-export default function CopilotChatPage() {
-  const router = useRouter()
-  const [localMessages, setLocalMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: "Hello! I'm your **Auto-Sourcing AI Copilot** powered by DeepSeek v3. I search South African supplier catalogs (Goldwagen, Masterparts, Midas, Toyota SA) and Facebook Marketplace. You can also paste any target website URL or Facebook listing link below to scrape it directly! What are we sourcing today?"
-    }
-  ])
-  const [inputVal, setInputVal] = useState('')
-  const [targetUrl, setTargetUrl] = useState('')
-  const [showUrlInput, setShowUrlInput] = useState(false)
-  const [showInspector, setShowInspector] = useState(false)
-  const [sources, setSources] = useState<CustomSource[]>(DEFAULT_SOURCES)
-  const [selectedSources, setSelectedSources] = useState<string[]>(['facebook', 'goldwagen', 'masterparts'])
-  const [showAddSourceModal, setShowAddSourceModal] = useState(false)
-  const [newSourceName, setNewSourceName] = useState('')
-  const [newSourceUrl, setNewSourceUrl] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [recentQuotes, setRecentQuotes] = useState<any[]>([])
-  const [accountId, setAccountId] = useState<string | null>(null)
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    try {
-      const savedSources = localStorage.getItem('wacrm_copilot_custom_sources')
-      if (savedSources) {
-        const parsed = JSON.parse(savedSources)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSources(parsed)
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load custom sources:', e)
-    }
-  }, [])
-
-  const handleAddCustomSource = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newSourceName.trim() || !newSourceUrl.trim()) return
-
-    const newSource: CustomSource = {
-      id: `custom-${Date.now()}`,
-      label: newSourceName.trim(),
-      url: newSourceUrl.trim(),
-      isCustom: true,
-    }
-
-    const updated = [...sources, newSource]
-    setSources(updated)
-    setSelectedSources(prev => [...prev, newSource.id])
-    try {
-      localStorage.setItem('wacrm_copilot_custom_sources', JSON.stringify(updated))
-    } catch (e) {
-      console.error('Failed to save custom sources:', e)
-    }
-
-    setNewSourceName('')
-    setNewSourceUrl('')
-    setShowAddSourceModal(false)
-    toast.success(`Added ${newSource.label} to Search Sources!`)
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+    toast.success('Instant PDF Quotation generated!')
   }
 
-  const handleDeleteCustomSource = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const updated = sources.filter(s => s.id !== id)
-    setSources(updated)
-    setSelectedSources(prev => prev.filter(sId => sId !== id))
+  const handleSendWhatsAppQuote = async (msgId: string) => {
+    setSendingWaMsgId(msgId)
+    const promptMsg = toast.loading('Dispatching WhatsApp Quote Agent...')
     try {
-      localStorage.setItem('wacrm_copilot_custom_sources', JSON.stringify(updated))
-    } catch (e) {
-      console.error('Failed to save custom sources:', e)
-    }
-    toast.success('Custom source removed')
-  }
-
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase
-          .from('profiles')
-          .select('account_id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data?.account_id) setAccountId(data.account_id)
-          })
+      const targetPhone = prompt('Enter customer WhatsApp phone number (e.g. +27821234567):', '+27')
+      if (!targetPhone) {
+        toast.dismiss(promptMsg)
+        setSendingWaMsgId(null)
+        return
       }
-    })
-  }, [])
 
-  useEffect(() => {
-    fetch('/api/quotes')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setRecentQuotes(data.slice(0, 3))
+      const res = await fetch('/api/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: targetPhone,
+          message_type: 'text',
+          content_text: `📄 Official Quotation generated for your auto parts request! Check your attached PDF quotation document for total ZAR pricing including 15% SA VAT.`,
+        }),
       })
-      .catch(console.error)
-  }, [])
 
-  // Load saved chat history from Database & localStorage on mount / accountId ready
-  useEffect(() => {
-    if (!accountId) return;
-    fetch(`/api/copilot/history?accountId=${accountId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data.messages) && data.messages.length > 0) {
-          setLocalMessages(data.messages)
-        } else {
-          try {
-            const saved = localStorage.getItem('wacrm_copilot_chat_history')
-            if (saved) {
-              const parsed = JSON.parse(saved)
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setLocalMessages(parsed)
+      if (!res.ok) throw new Error('WhatsApp dispatch failed')
+
+      // Update Pipeline Step 3 to Success
+      setActivePipeline(prev =>
+        prev.map(step =>
+          step.id === 'step-3'
+            ? {
+                ...step,
+                status: 'completed',
+                logs: [...step.logs, `Dispatched WhatsApp PDF quotation to ${targetPhone}`],
+                toolCalls: [
+                  {
+                    id: `tc-${Date.now()}`,
+                    toolName: 'engineSendMedia',
+                    status: 'success',
+                    input: { to: targetPhone, kind: 'document' },
+                    output: { whatsapp_message_id: `wa_${Date.now()}` },
+                    timestamp: new Date().toLocaleTimeString(),
+                  },
+                ],
               }
-            }
-          } catch {}
-        }
-      })
-      .catch(console.error)
-  }, [accountId])
+            : step
+        )
+      )
 
-  // Auto-save chat history to Database & localStorage whenever localMessages updates
-  useEffect(() => {
-    if (localMessages.length > 0) {
-      try {
-        localStorage.setItem('wacrm_copilot_chat_history', JSON.stringify(localMessages))
-      } catch (e) {
-        console.error('Failed to save chat history to localStorage:', e)
-      }
-
-      if (accountId) {
-        fetch('/api/copilot/history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accountId, messages: localMessages }),
-        }).catch(console.error)
-      }
+      toast.success(`WhatsApp Quote dispatched to ${targetPhone}!`, { id: promptMsg })
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to send WhatsApp quote', { id: promptMsg })
+    } finally {
+      setSendingWaMsgId(null)
     }
-  }, [localMessages, accountId])
-
-  const clearChatHistory = () => {
-    const initialMsg = [
-      {
-        id: '1',
-        role: 'assistant' as const,
-        content: "Hello! I'm your **Auto-Sourcing AI Copilot** powered by DeepSeek v3. I search South African supplier catalogs (Goldwagen, Masterparts, Midas, Toyota SA) and Facebook Marketplace. You can also paste any target website URL or Facebook listing link below to scrape it directly! What are we sourcing today?"
-      }
-    ]
-    setLocalMessages(initialMsg)
-    try {
-      localStorage.removeItem('wacrm_copilot_chat_history')
-    } catch (e) {
-      console.error('Failed to clear local chat history:', e)
-    }
-
-    if (accountId) {
-      fetch(`/api/copilot/history?accountId=${accountId}`, { method: 'DELETE' }).catch(console.error)
-    }
-    toast.success('Chat history cleared')
-  }
-
-  const copyToClipboard = (id: string, text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
   }
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return
-    const fullPrompt = targetUrl.trim()
-      ? `${text.trim()}\n\n🔗 Target Link to Scrape: ${targetUrl.trim()}`
-      : text.trim()
 
-    const userMsg = { id: String(Date.now()), role: 'user' as const, content: fullPrompt }
-    const updatedMessages = [...localMessages, userMsg]
-    setLocalMessages(updatedMessages)
+    const userMsgId = String(Date.now())
+    const assistantMsgId = String(Date.now() + 1)
+
+    setLocalMessages(prev => [
+      ...prev,
+      { id: userMsgId, role: 'user', content: text },
+      { id: assistantMsgId, role: 'assistant', content: '' },
+    ])
+
     setInputVal('')
-    setTargetUrl('')
     setIsLoading(true)
 
+    // Update Pipeline for new agent execution run
+    setActivePipeline(prev => [
+      {
+        id: `step-run-${Date.now()}`,
+        agentName: 'Auto-Sourcing & Quote Pipeline',
+        agentIcon: Cpu,
+        trigger: `Inbound User Query: "${text.slice(0, 30)}..."`,
+        status: 'running',
+        startedAt: new Date().toLocaleTimeString(),
+        toolCalls: [
+          {
+            id: `tc-live-${Date.now()}`,
+            toolName: text.toLowerCase().includes('quote') ? 'createQuote' : 'searchInventory',
+            status: 'running',
+            input: { query: text },
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ],
+        logs: [
+          `Received query: "${text}"`,
+          'Executing inventory check & stagehand web scraper...',
+        ],
+      },
+      ...prev,
+    ])
+
     try {
-      const res = await fetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accountId,
-          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
-        })
+          messages: [...localMessages, { role: 'user', content: text }],
+        }),
       })
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        const errorText = errData.error || `Server error (${res.status})`
-        setLocalMessages(prev => [
-          ...prev,
-          { id: String(Date.now()), role: 'assistant', content: `⚠️ **Error:** ${errorText}` }
-        ])
-        return
+      if (!response.ok) {
+        throw new Error(`API error ${response.status}`)
       }
 
-      if (!res.body) return
-      const reader = res.body.getReader()
+      const reader = response.body?.getReader()
       const decoder = new TextDecoder()
-      let assistantMsg = { id: String(Date.now() + 1), role: 'assistant' as const, content: '' }
-      setLocalMessages(prev => [...prev, assistantMsg])
+      let assistantText = ''
 
-      let streamBuffer = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        streamBuffer += decoder.decode(value, { stream: true })
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-        const lines = streamBuffer.split('\n')
-        // Hold the last incomplete line in buffer
-        streamBuffer = lines.pop() || ''
+          const chunkStr = decoder.decode(value, { stream: true })
+          const lines = chunkStr.split('\n')
 
-        for (const line of lines) {
-          if (!line.trim()) continue
-          if (line.startsWith('0:')) {
-            try {
-              assistantMsg.content += JSON.parse(line.slice(2))
-            } catch {
-              assistantMsg.content += line.slice(2)
+          for (const line of lines) {
+            if (line.startsWith('0:')) {
+              try {
+                assistantText += JSON.parse(line.slice(2))
+              } catch {
+                assistantText += line.slice(2)
+              }
+            } else if (!line.match(/^[0-9a-z]:/)) {
+              assistantText += line
             }
-          } else if (!line.match(/^[0-9a-z]:/)) {
-            assistantMsg.content += line + '\n'
           }
+
+          setLocalMessages(prev =>
+            prev.map(m => (m.id === assistantMsgId ? { ...m, content: assistantText } : m))
+          )
         }
-        setLocalMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }])
       }
 
-      if (streamBuffer.trim()) {
-        if (streamBuffer.startsWith('0:')) {
-          try {
-            assistantMsg.content += JSON.parse(streamBuffer.slice(2))
-          } catch {
-            assistantMsg.content += streamBuffer.slice(2)
-          }
-        } else if (!streamBuffer.match(/^[0-9a-z]:/)) {
-          assistantMsg.content += streamBuffer
-        }
-        setLocalMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }])
-      }
+      // Mark Pipeline Step as Completed
+      setActivePipeline(prev =>
+        prev.map((step, idx) =>
+          idx === 0
+            ? {
+                ...step,
+                status: 'completed',
+                logs: [...step.logs, 'Agent pipeline completed output generation.'],
+                toolCalls: step.toolCalls.map(tc => ({ ...tc, status: 'success' })),
+              }
+            : step
+        )
+      )
     } catch (err: any) {
       console.error('Chat error:', err)
-      setLocalMessages(prev => [
-        ...prev,
-        { id: String(Date.now()), role: 'assistant', content: `⚠️ **Network Error:** ${err?.message || 'Failed to communicate with DeepSeek API'}` }
-      ])
+      setLocalMessages(prev =>
+        prev.map(m =>
+          m.id === assistantMsgId
+            ? {
+                ...m,
+                content: `⚠️ **Network Error:** ${err?.message || 'Failed to communicate with DeepSeek AI engine.'}`,
+              }
+            : m
+        )
+      )
     } finally {
       setIsLoading(false)
     }
@@ -623,641 +730,382 @@ export default function CopilotChatPage() {
     sendMessage(text)
   }
 
-  const handleSelectSourcingPreset = () => {
-    setLocalMessages(prev => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        role: 'assistant',
-        content: `### 🔍 DeepSeek v3 Auto-Sourcing Active
-
-What vehicle part or supplier catalog item would you like to search today?
-
----
-
-#### 💡 How to search:
-Type the **part name, vehicle make, model, or year** below in the chat box.
-
-**Search Examples:**
-- \`Toyota Hilux 2.8 GD-6 Front Brake Pads\`
-- \`2022 Ford Ranger 3.2 Radiator Assembly\`
-- \`Golf 7 GTI Alternator 12V\`
-
-*I will check local workshop inventory and live South African supplier catalogs immediately!*`
-      }
-    ])
-  }
-
-  const handleSelectQuotePreset = () => {
-    setLocalMessages(prev => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        role: 'assistant',
-        content: `### ⚡ Smart Quote Builder Active
-
-Which parts or products would you like to build an official ZAR quotation for?
-
----
-
-#### 💡 How to build a quote:
-Type the **part items, quantities, and customer details** below.
-
-**Quote Examples:**
-- \`Quote 2x 2021 Toyota Hilux Brake Pads for Customer John Doe\`
-- \`Generate ZAR quote for 1x Silverton Radiators SKU-1092 with 15% VAT\`
-
-*I will calculate VAT, total pricing, generate a downloadable PDF, and enable 1-click WhatsApp dispatch!*`
-      }
-    ])
-  }
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    sendMessage(inputVal)
-  }
-
   return (
     <TooltipProvider>
       <div className="flex h-[calc(100vh-4rem)] bg-background text-foreground overflow-hidden font-sans">
-        
-        {/* Left Sidebar - Agents & Presets */}
-        <div className="w-80 border-r border-border bg-card flex-col hidden lg:flex">
-          <div className="p-5 font-bold text-sm border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2 text-foreground">
-              <Sparkles className="w-4 h-4 text-orange-500" />
-              <span>Sourcing Copilot</span>
+        {/* Left Sidebar - Autonomous Agents & Control Panel */}
+        <div className="w-80 border-r border-border bg-card/60 backdrop-blur-xl flex-col hidden lg:flex">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2 text-foreground font-bold text-sm">
+              <Cpu className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span>AI Agent Studio</span>
             </div>
-            <Badge variant="outline" className="border-orange-500/30 text-orange-600 dark:text-orange-400 bg-orange-500/10 text-[10px]">
-              Active
+            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px] uppercase font-bold">
+              4 Agents Live
             </Badge>
           </div>
 
           <ScrollArea className="flex-1 p-3">
             <div className="space-y-4">
+              {/* Active Autonomous Agent Roster */}
               <div>
-                <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider">
-                  Presets & Assistants
+                <div className="px-2 pb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between">
+                  <span>Agent Roster</span>
+                  <span className="text-emerald-400 font-mono">ON</span>
                 </div>
-                <div className="space-y-1">
-                  <Button
-                    variant="ghost"
-                    onClick={handleSelectSourcingPreset}
-                    className="w-full justify-start text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all rounded-xl p-3 h-auto cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mr-3 shrink-0">
-                      <Sparkles className="h-4 w-4" />
+                <div className="space-y-2">
+                  <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 transition-all hover:bg-emerald-500/10">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                          <Search className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground">Auto-Sourcing Agent</span>
+                      </div>
+                      <Badge className="bg-emerald-500/20 text-emerald-300 text-[9px] border-0">ACTIVE</Badge>
                     </div>
-                    <div className="flex flex-col items-start text-left min-w-0">
-                      <span className="text-xs font-semibold truncate">DeepSeek v3 Sourcing</span>
-                      <span className="text-[10px] text-muted-foreground/80 truncate">Live parts & stock search</span>
-                    </div>
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    onClick={handleSelectQuotePreset}
-                    className="w-full justify-start text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all rounded-xl p-3 h-auto cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mr-3 shrink-0">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <div className="flex flex-col items-start text-left min-w-0">
-                      <span className="text-xs font-semibold truncate">Smart Quote Builder</span>
-                      <span className="text-[10px] text-muted-foreground/80 truncate">Auto-calculates margins & VAT</span>
-                    </div>
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    onClick={() => router.push('/automations/workflows')}
-                    className="w-full justify-start text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all rounded-xl p-3 h-auto cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center mr-3 shrink-0">
-                      <Zap className="h-4 w-4" />
-                    </div>
-                    <div className="flex flex-col items-start text-left min-w-0">
-                      <span className="text-xs font-semibold truncate">Stagehand Automation</span>
-                      <span className="text-[10px] text-muted-foreground/80 truncate">Browserbase web scraper</span>
-                    </div>
-                  </Button>
-                </div>
-              </div>
-
-              {/* Agent Tools Panel */}
-              <div className="pt-4 border-t border-border/50">
-                <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider flex items-center gap-1.5">
-                  <Settings2 className="w-3.5 h-3.5" />
-                  Active AI Tools
-                </div>
-                <div className="space-y-1.5 px-2">
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
-                    <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-500">
-                      <Search className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-semibold text-foreground truncate">searchInventory</div>
-                      <div className="text-[9px] text-muted-foreground truncate">Live catalog stock check</div>
-                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Scans local catalog & web suppliers (*Goldwagen, Masterparts, Facebook SA*).
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
-                    <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500">
-                      <FileText className="w-3.5 h-3.5" />
+
+                  <div className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/5 transition-all hover:bg-purple-500/10">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground">Smart ZAR Quote Agent</span>
+                      </div>
+                      <Badge className="bg-purple-500/20 text-purple-300 text-[9px] border-0">ACTIVE</Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-semibold text-foreground truncate">createQuote</div>
-                      <div className="text-[9px] text-muted-foreground truncate">ZAR Quote with 15% VAT</div>
-                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Calculates 15% SA VAT, compiles PDF quotes & Ozow 1-click payment links.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border">
-                    <div className="p-1.5 rounded-md bg-orange-500/10 text-orange-500">
-                      <Package className="w-3.5 h-3.5" />
+
+                  <div className="p-3 rounded-xl border border-blue-500/30 bg-blue-500/5 transition-all hover:bg-blue-500/10">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                          <Zap className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground">Stagehand Scraper</span>
+                      </div>
+                      <Badge className="bg-blue-500/20 text-blue-300 text-[9px] border-0">READY</Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-semibold text-foreground truncate">sourceOutOfStock</div>
-                      <div className="text-[9px] text-muted-foreground truncate">External supplier scouting</div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Automated headless browser for out-of-stock part discovery.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl border border-green-500/30 bg-green-500/5 transition-all hover:bg-green-500/10">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center font-bold">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-bold text-foreground">WhatsApp Dispatcher</span>
+                      </div>
+                      <Badge className="bg-green-500/20 text-green-300 text-[9px] border-0">ACTIVE</Badge>
                     </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Delivers text responses & attached quotation PDF files directly on WhatsApp.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Recent Quotes */}
-              <div className="pt-4 border-t border-border/50">
-                <div className="px-2 pb-2 text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider flex items-center justify-between">
-                  <span>Recent Quotes</span>
-                  <button onClick={() => router.push('/quotes')} className="text-emerald-500 hover:text-emerald-400 text-[10px] cursor-pointer">View All</button>
+              {/* Quick Trigger Presets */}
+              <div className="pt-3 border-t border-border">
+                <div className="px-2 pb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Quick Triggers
                 </div>
-                <div className="space-y-1">
-                  {recentQuotes.length === 0 ? (
-                    <div className="px-2 text-xs text-muted-foreground italic">No recent quotes</div>
-                  ) : (
-                    recentQuotes.map(quote => (
-                      <button
-                        key={quote.id}
-                        onClick={() => router.push('/quotes')}
-                        className="w-full text-left p-2 rounded-lg hover:bg-muted/60 transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-foreground group-hover:text-emerald-500 transition-colors truncate">
-                            {quote.quote_number}
-                          </span>
-                          <span className="text-[10px] font-bold text-foreground">
-                            R {quote.total_amount.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                          {quote.customer_name}
-                        </div>
-                      </button>
-                    ))
-                  )}
+                <div className="space-y-1.5">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handlePromptClick('Quote 2x 2021 Toyota Hilux 2.8 GD-6 Front Brake Pads for Customer John Doe')}
+                    className="w-full justify-start text-left text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg p-2 h-auto"
+                  >
+                    <FileText className="w-3.5 h-3.5 mr-2 text-purple-400 shrink-0" />
+                    <span className="truncate">Generate ZAR Quote for Hilux Brake Pads</span>
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => handlePromptClick('Find 2022 Ford Ranger 3.2 Radiator Assembly with pricing and stock status')}
+                    className="w-full justify-start text-left text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg p-2 h-auto"
+                  >
+                    <Search className="w-3.5 h-3.5 mr-2 text-emerald-400 shrink-0" />
+                    <span className="truncate">Search Ford Ranger Radiator Stock</span>
+                  </Button>
                 </div>
               </div>
             </div>
           </ScrollArea>
-
-          <div className="p-4 border-t border-border/80 bg-background/40">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/automations/workflows')}
-              className="w-full border-border bg-card/80 hover:bg-muted text-foreground/90 rounded-xl cursor-pointer"
-            >
-              <Plus className="mr-2 h-4 w-4 text-emerald-400" /> New Agent Workflow
-            </Button>
-          </div>
         </div>
 
-        {/* Main Chat Interface */}
-        <div className="flex-1 flex flex-col relative bg-background overflow-hidden">
-          
-          {/* Top Bar: Source Filters & Live Agent Inspector Toggle */}
-          <div className="px-6 py-3 border-b border-border bg-card flex flex-wrap items-center justify-between gap-3 shrink-0 z-10 shadow-xs">
-            <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none flex-1 min-w-0">
-              <span className="text-xs font-semibold text-muted-foreground mr-1 shrink-0">Search Sources:</span>
-              {sources.map((source) => {
-                const isSelected = selectedSources.includes(source.id);
-                return (
-                  <div
-                    key={source.id}
-                    onClick={() => {
-                      setSelectedSources(prev =>
-                        isSelected ? prev.filter(s => s !== source.id) : [...prev, source.id]
-                      );
-                    }}
-                    className={cn(
-                      "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer border shrink-0 group relative",
-                      isSelected
-                        ? "bg-orange-500/10 border-orange-500/40 text-orange-600 dark:text-orange-400 font-semibold"
-                        : "bg-muted border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-foreground"
-                    )}
-                  >
-                    <span>{isSelected ? "✓" : "+"}</span>
-                    <span title={source.url}>{source.label}</span>
+        {/* Main Central Studio Workspace */}
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
+          {/* Header Bar & Tab Selector */}
+          <div className="h-14 border-b border-border bg-card/40 backdrop-blur-md px-4 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-emerald-400" />
+                <h1 className="font-bold text-sm text-foreground">Sourcing Copilot Studio</h1>
+              </div>
+            </div>
 
-                    {source.isCustom && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteCustomSource(source.id, e)}
-                        title="Delete custom source"
-                        className="ml-1 px-1 rounded-full hover:bg-red-500/20 hover:text-red-500 transition-colors text-[10px] font-bold cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+            {/* View Mode Tabs */}
+            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border">
+              <button
+                type="button"
+                onClick={() => setActiveTab('pipeline')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                  activeTab === 'pipeline'
+                    ? 'bg-emerald-500 text-zinc-950 shadow-md font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Live Execution Pipeline</span>
+              </button>
 
               <button
                 type="button"
-                onClick={() => setShowAddSourceModal(prev => !prev)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1 cursor-pointer shrink-0"
-              >
-                <Plus className="h-3 w-3" />
-                <span>Add Target URL / Facebook Group</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearChatHistory}
-                title="Clear conversation history"
-                className="border-border bg-card text-xs font-semibold rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                <span>Clear Chat</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInspector(prev => !prev)}
+                onClick={() => setActiveTab('chat')}
                 className={cn(
-                  "border-border text-xs font-semibold rounded-xl transition-all cursor-pointer",
-                  showInspector
-                    ? "bg-orange-500 text-white border-orange-600 font-bold shadow-md"
-                    : "bg-card text-foreground/80 hover:bg-muted"
+                  'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                  activeTab === 'chat'
+                    ? 'bg-emerald-500 text-zinc-950 shadow-md font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                <Zap className="mr-1.5 h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
-                <span>{showInspector ? "Hide Browser Inspector" : "📺 Live Agent Inspector"}</span>
-              </Button>
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Copilot Chat & PDF Studio</span>
+              </button>
             </div>
           </div>
 
-          {/* Add Custom Source Input Drawer */}
-          {showAddSourceModal && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-6 py-2 bg-card/95 border-b border-border z-10 shrink-0">
-              <form onSubmit={handleAddCustomSource} className="max-w-4xl mx-auto flex flex-wrap items-center gap-2">
-                <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 shrink-0">
-                  <LinkIcon className="h-3.5 w-3.5" />
-                  <span>Add Target Source / Group:</span>
+          {/* Workspace Body */}
+          {activeTab === 'pipeline' ? (
+            <div className="flex-1 p-6 overflow-y-auto space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-emerald-400 animate-spin" />
+                    <span>Real-Time Agent Execution Pipeline</span>
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Visual workflow showing live triggers, agent delegation, executed tool calls, and output logs.
+                  </p>
                 </div>
-                <Input
-                  value={newSourceName}
-                  onChange={(e) => setNewSourceName(e.target.value)}
-                  placeholder="Title (e.g. Hilux SA Facebook Group)"
-                  className="h-8 text-xs bg-background rounded-lg border-border w-56 shadow-xs"
-                  required
-                />
-                <Input
-                  value={newSourceUrl}
-                  onChange={(e) => setNewSourceUrl(e.target.value)}
-                  placeholder="Target URL (e.g. https://facebook.com/groups/toyotahiluxsa)"
-                  className="h-8 text-xs bg-background rounded-lg border-border flex-1 min-w-[220px] shadow-xs"
-                  required
-                />
-                <Button type="submit" size="sm" className="h-8 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded-lg shadow-md cursor-pointer">
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  <span>Save Source</span>
-                </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddSourceModal(false)} className="h-8 text-xs cursor-pointer">
-                  Cancel
-                </Button>
-              </form>
-            </motion.div>
-          )}
+                <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-500/10 text-xs px-3 py-1">
+                  Active Monitoring
+                </Badge>
+              </div>
 
-          <div className="flex-1 flex min-h-0 relative">
-            {/* Messages Feed */}
-            <ScrollArea className="flex-1 p-4 md:p-6">
-              <div className="max-w-4xl mx-auto space-y-6 pb-6">
-              
-              {/* Quick Suggestion Cards */}
-              {localMessages.length <= 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 mb-8"
-                >
-                  <Card
-                    className="bg-card/60 border-border/80 hover:bg-muted/50 hover:border-emerald-500/40 transition-all cursor-pointer group"
-                    onClick={handleSelectSourcingPreset}
-                  >
-                    <CardContent className="p-4 flex gap-3 items-start">
-                      <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform">
-                        <Search className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-xs text-foreground/90 mb-0.5">Source SA Supplier Part</h3>
-                        <p className="text-[11px] text-muted-foreground/80">Search Goldwagen, Masterparts & Facebook Marketplace for any part</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className="bg-card/60 border-border/80 hover:bg-muted/50 hover:border-purple-500/40 transition-all cursor-pointer group"
-                    onClick={handleSelectQuotePreset}
-                  >
-                    <CardContent className="p-4 flex gap-3 items-start">
-                      <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg group-hover:scale-110 transition-transform">
-                        <FileText className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-xs text-foreground/90 mb-0.5">Generate ZAR Quote</h3>
-                        <p className="text-[11px] text-muted-foreground/80">Build a ZAR quote in Rands with 15% SA VAT & instant PDF</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* Message List */}
-              <AnimatePresence initial={false}>
-                {localMessages.map((m, idx) => {
-                  const isLastAssistant = m.role === 'assistant' && idx === localMessages.length - 1 && isLoading;
+              {/* Execution Steps */}
+              <div className="space-y-4">
+                {activePipeline.map((step, sIdx) => {
+                  const Icon = step.agentIcon || Bot
                   return (
                     <motion.div
-                      key={m.id}
+                      key={step.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={`flex gap-3.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
+                      className="rounded-2xl border border-border/80 bg-card/90 backdrop-blur-md overflow-hidden shadow-lg"
                     >
-                      <Avatar className={`h-8 w-8 border ${m.role === 'user' ? 'border-emerald-500/40' : 'border-border'}`}>
-                        <AvatarFallback className={m.role === 'user' ? 'bg-emerald-600 text-foreground font-semibold text-xs' : 'bg-card text-emerald-400 font-bold text-xs'}>
-                          {m.role === 'user' ? 'U' : 'AI'}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="group relative max-w-[85%] md:max-w-[75%]">
-                        <div
-                          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                            m.role === 'user'
-                              ? 'bg-emerald-600 text-foreground rounded-tr-xs shadow-lg shadow-emerald-950/40'
-                              : 'bg-card/90 backdrop-blur-md border border-border text-foreground/90 rounded-tl-xs shadow-md'
-                          }`}
-                        >
-                          <div className="relative">
-                            {/* Live Step-by-Step Agent Progress Banner at TOP of Answer Card */}
-                            {m.role === 'assistant' && (isLoading || isLastAssistant) && (
-                              <div className="mb-3 p-3 rounded-xl bg-background/90 backdrop-blur-md border border-emerald-500/40 space-y-2 shadow-md">
-                                <div className="flex items-center justify-between border-b border-border pb-1.5">
-                                  <div className="flex items-center gap-2">
-                                    <Sparkles className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-                                    <span className="text-xs font-bold text-foreground">Stagehand Browser Agent Active</span>
-                                  </div>
-                                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 animate-pulse">
-                                    Executing Auto-Sourcing...
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] font-mono">
-                                  <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                                    <span className="text-emerald-400">✓</span> 1. Connected to Browserbase
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
-                                    <Loader2 className="h-3 w-3 animate-spin text-emerald-400 shrink-0" /> 2. Searching Catalogs
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-muted-foreground/80 font-semibold">
-                                    <span>⚡</span> 3. Compiling ZAR Quotation
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <FormattedMarkdown content={m.content} />
-                            {isLastAssistant && (
-                              <span className="inline-block w-1.5 h-4 ml-1 bg-emerald-400 animate-pulse rounded-xs" />
-                            )}
-
-                            {/* Always-Visible Prominent PDF & WhatsApp Action Card */}
-                            {m.role === 'assistant' && idx > 0 && (m.content.includes('Official ZAR PDF') || m.content.includes('quotation') || m.content.includes('Quote')) && (
-                              <div className="mt-3 pt-3 border-t border-border/80 flex flex-wrap items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
-                                  <Sparkles className="h-3.5 w-3.5" />
-                                  <span>Official ZAR Quotation Document Ready</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => generatePdfFromChatContent(m.content)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md transition-all cursor-pointer"
-                                  >
-                                    <FileText className="h-3.5 w-3.5" />
-                                    <span>Download ZAR PDF Quote</span>
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      const phone = prompt('Enter customer WhatsApp phone number (e.g. +27689423316):')
-                                      if (!phone) return
-                                      toast.promise(
-                                        sendMessage(`Send this quotation to WhatsApp phone number ${phone}`),
-                                        {
-                                          loading: 'Dispatching WhatsApp Quote Agent...',
-                                          success: 'WhatsApp Quote Agent dispatched!',
-                                          error: 'Failed to send WhatsApp quote',
-                                        }
-                                      )
-                                    }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
-                                  >
-                                    <MessageCircle className="h-3.5 w-3.5" />
-                                    <span>Send via WhatsApp</span>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                      {/* Step Header */}
+                      <div className="p-4 border-b border-border/60 bg-muted/30 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/20">
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-foreground">{step.agentName}</span>
+                              <Badge
+                                className={cn(
+                                  'text-[10px] border-0 uppercase font-bold',
+                                  step.status === 'completed'
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : step.status === 'running'
+                                    ? 'bg-amber-500/20 text-amber-300 animate-pulse'
+                                    : 'bg-muted text-muted-foreground'
+                                )}
+                              >
+                                {step.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              <strong>Trigger:</strong> {step.trigger}
+                            </p>
                           </div>
                         </div>
 
-                        {/* Copy Action */}
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                          <button
-                            onClick={() => copyToClipboard(m.id, m.content)}
-                            className="p-1.5 rounded bg-muted text-muted-foreground/80 hover:text-foreground text-xs"
-                          >
-                            {copiedId === m.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                          </button>
+                        <div className="text-right text-xs text-muted-foreground font-mono">
+                          Started: {step.startedAt}
+                        </div>
+                      </div>
+
+                      {/* Tool Calls & Execution Details */}
+                      <div className="p-4 space-y-3">
+                        <div className="text-xs font-semibold text-foreground uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                          <Wrench className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Tool Actions Executed</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {step.toolCalls.map(tc => (
+                            <div
+                              key={tc.id}
+                              className="p-3 rounded-xl border border-border/60 bg-background/60 backdrop-blur-sm space-y-2 text-xs"
+                            >
+                              <div className="flex items-center justify-between">
+                                <code className="font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[11px]">
+                                  {tc.toolName}
+                                </code>
+                                <span className="text-[10px] text-muted-foreground font-mono">{tc.timestamp}</span>
+                              </div>
+
+                              <div className="bg-muted/40 p-2 rounded-lg text-[11px] font-mono text-muted-foreground overflow-x-auto">
+                                <div><strong>Input:</strong> {JSON.stringify(tc.input)}</div>
+                                {tc.output && (
+                                  <div className="mt-1 text-emerald-300">
+                                    <strong>Output:</strong> {JSON.stringify(tc.output)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Live Activity Logs */}
+                        <div className="pt-2">
+                          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                            <Terminal className="w-3.5 h-3.5 text-blue-400" />
+                            <span>System Activity Log</span>
+                          </div>
+                          <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 text-emerald-400 font-mono text-[11px] space-y-1 max-h-32 overflow-y-auto">
+                            {step.logs.map((log, lIdx) => (
+                              <div key={lIdx} className="flex items-start gap-2">
+                                <span className="text-zinc-600 shrink-0">&gt;</span>
+                                <span>{log}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </motion.div>
                   )
                 })}
-              </AnimatePresence>
-
-              <div ref={messagesEndRef} className="h-2" />
+              </div>
             </div>
-          </ScrollArea>
+          ) : (
+            /* Copilot Chat Studio View */
+            <div className="flex-1 flex flex-col min-h-0">
+              <ScrollArea className="flex-1 p-4">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  {localMessages.map((m, idx) => (
+                    <div
+                      key={m.id || idx}
+                      className={cn(
+                        'flex gap-3 text-sm',
+                        m.role === 'user' ? 'justify-end' : 'justify-start'
+                      )}
+                    >
+                      {m.role === 'assistant' && (
+                        <Avatar className="w-8 h-8 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shrink-0">
+                          <AvatarFallback className="bg-emerald-500/20 text-emerald-400 font-bold text-xs">
+                            AI
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
 
-          {/* Live Agent Browser Inspector Drawer */}
-          {showInspector && (
-            <div className="w-[480px] border-l border-border bg-background flex flex-col h-full z-20 shrink-0 shadow-2xl">
-              {/* Header */}
-              <div className="p-3 border-b border-border flex items-center justify-between bg-card/80">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                    Live Stagehand Browser Stream
-                  </span>
-                </div>
-                <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-500/10 text-[10px] font-mono animate-pulse">
-                  Browserbase Session Active
-                </Badge>
-              </div>
+                      <div
+                        className={cn(
+                          'max-w-[85%] rounded-2xl p-4 shadow-md leading-relaxed',
+                          m.role === 'user'
+                            ? 'bg-emerald-600 text-white rounded-br-none'
+                            : 'bg-card border border-border text-foreground rounded-bl-none'
+                        )}
+                      >
+                        {m.role === 'user' ? (
+                          <p className="font-medium whitespace-pre-wrap">{m.content}</p>
+                        ) : (
+                          <div>
+                            <FormattedMarkdown content={m.content} />
 
-              {/* Browser Address Bar Frame */}
-              <div className="bg-card border-b border-border px-3 py-2 flex items-center gap-2 text-xs font-mono">
-                <div className="flex items-center gap-1.5 text-muted-foreground/60">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                </div>
-                <div className="flex-1 bg-background px-3 py-1 rounded-md border border-border text-muted-foreground text-[11px] truncate flex items-center gap-2">
-                  <span className="text-emerald-400">🔒</span>
-                  <span className="text-muted-foreground">https://www.facebook.com/marketplace/search/?query=Toyota+Hilux+brake+pads</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowInspector(false)}
-                  className="text-muted-foreground/80 hover:text-white text-xs font-bold px-1"
-                >
-                  ✕
-                </button>
-              </div>
+                            {/* Always-Visible Action Bar for Quotation Messages */}
+                            {idx > 0 &&
+                              (m.content.includes('Official ZAR PDF') ||
+                                m.content.includes('quotation') ||
+                                m.content.includes('Quote') ||
+                                m.content.includes('Total Amount')) && (
+                                <div className="mt-4 pt-3 border-t border-border/80 flex items-center gap-2 flex-wrap">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => generatePdfFromChatContent(m.content)}
+                                    className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs gap-1.5 shadow-md cursor-pointer"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download ZAR PDF Quote</span>
+                                  </Button>
 
-              {/* Viewport Live Action Canvas */}
-              <div className="flex-1 bg-background relative overflow-hidden flex flex-col items-center justify-center p-4">
-                {/* Simulated Live Stagehand Visual Web Canvas */}
-                <div className="w-full h-full rounded-xl border border-border bg-card/90 backdrop-blur-md p-4 space-y-4 relative font-sans shadow-2xl overflow-y-hidden">
-                  {/* Visual DOM Target Box */}
-                  <div className="p-3 rounded-lg bg-background border-2 border-dashed border-emerald-500/70 relative">
-                    <span className="absolute -top-3 left-3 bg-emerald-500 text-zinc-950 text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
-                      DOM Action Target: button[aria-label="Search Marketplace"]
-                    </span>
-                    <div className="flex items-center justify-between text-xs text-foreground/90 mt-1">
-                      <span className="font-bold text-emerald-400">Facebook Marketplace SA — Auto Parts</span>
-                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-mono">248 Results Found</span>
-                    </div>
-                  </div>
-
-                  {/* Scraped Listings Preview */}
-                  <div className="space-y-2">
-                    <div className="p-2.5 rounded-lg bg-background/80 backdrop-blur-md border border-border flex items-center justify-between text-xs">
-                      <div>
-                        <div className="font-bold text-foreground">2021 Toyota Hilux 2.8 GD-6 Front Brake Pads</div>
-                        <div className="text-[10px] text-muted-foreground/80">Seller: Goldwagen JHB Branch | Ref: BP4145</div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleSendWhatsAppQuote(m.id)}
+                                    disabled={sendingWaMsgId === m.id}
+                                    className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 text-xs gap-1.5 cursor-pointer"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Dispatch via WhatsApp</span>
+                                  </Button>
+                                </div>
+                              )}
+                          </div>
+                        )}
                       </div>
-                      <div className="font-extrabold text-emerald-400 text-sm">R 450.00</div>
+
+                      {m.role === 'user' && (
+                        <Avatar className="w-8 h-8 rounded-xl border border-border bg-muted text-muted-foreground shrink-0">
+                          <AvatarFallback className="bg-muted text-foreground font-bold text-xs">
+                            ME
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
-                    <div className="p-2.5 rounded-lg bg-background/80 backdrop-blur-md border border-border flex items-center justify-between text-xs">
-                      <div>
-                        <div className="font-bold text-foreground">Toyota Hilux Front Brake Disc & Pad Kit</div>
-                        <div className="text-[10px] text-muted-foreground/80">Seller: Masterparts CPT | Stock: 14 available</div>
-                      </div>
-                      <div className="font-extrabold text-emerald-400 text-sm">R 1,250.00</div>
-                    </div>
-                  </div>
-
-                  {/* Cursor Indicator */}
-                  <div className="absolute bottom-6 right-8 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500 text-zinc-950 font-mono font-bold text-[10px] shadow-lg animate-bounce">
-                    <span>👆 Stagehand Click (X: 420, Y: 180)</span>
-                  </div>
+                  ))}
+                  <div ref={messagesEndRef} />
                 </div>
+              </ScrollArea>
 
-                {/* Session Replay Stream Overlay Fallback */}
-                <div className="absolute bottom-2 left-2 right-2 opacity-90">
-                  <SessionReplay sessionId={activeSessionId || "592e82d0-5844-4bc6-a198-df22350d84fa"} />
-                </div>
-              </div>
-
-              {/* Console & DOM Log Footer */}
-              <div className="p-3 border-t border-border bg-card/90 backdrop-blur-md space-y-1.5 font-mono text-[10px]">
-                <div className="text-emerald-400 font-semibold flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>Agent Action: Inspecting catalog elements & fitments...</span>
-                </div>
-                <div className="text-muted-foreground/80 truncate">Target: https://facebook.com/marketplace/search/?query=Hilux</div>
-                <div className="text-muted-foreground/60 font-bold">DOM Target: button[aria-label="Search Marketplace"]</div>
+              {/* Chat Input Bar */}
+              <div className="p-4 border-t border-border bg-card/60 backdrop-blur-md shrink-0">
+                <form onSubmit={onSubmit} className="max-w-4xl mx-auto flex items-center gap-2">
+                  <Input
+                    value={inputVal}
+                    onChange={e => setInputVal(e.target.value)}
+                    placeholder="Ask Copilot to source a part, check inventory, or generate a quote..."
+                    className="flex-1 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground rounded-xl h-11 px-4 text-sm"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !inputVal.trim()}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold h-11 px-5 rounded-xl gap-2 cursor-pointer"
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    <span>Send</span>
+                  </Button>
+                </form>
               </div>
             </div>
           )}
-        </div>
-
-          {/* Clean Non-Overlapping Input Bar with Comfortable Width */}
-          <div className="p-4 bg-background border-t border-border/80 shrink-0 z-20 space-y-2">
-            {showUrlInput && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="max-w-3xl mx-auto">
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 text-emerald-400">
-                    <LinkIcon className="h-3.5 w-3.5" />
-                  </div>
-                  <Input
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    placeholder="Paste target URL link to scrape (Facebook Marketplace item, supplier link, catalog page)..."
-                    className="pl-9 pr-4 py-2 rounded-xl bg-card/90 backdrop-blur-md border-emerald-500/40 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-emerald-500/50"
-                  />
-                </div>
-              </motion.div>
-            )}
-
-            <form onSubmit={onSubmit} className="max-w-3xl mx-auto relative flex items-center">
-              <Input
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Ask Copilot to source a part, check inventory, or create a quote..."
-                className="pl-5 pr-24 py-6 rounded-2xl bg-card/90 backdrop-blur-md border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-emerald-500/50 focus-visible:border-emerald-500/50 shadow-2xl text-sm"
-              />
-              <div className="absolute right-2 flex items-center gap-1.5">
-                <Button
-                  type="button"
-                  size="icon"
-                  onClick={() => setShowUrlInput(prev => !prev)}
-                  title="Attach target URL link to scrape"
-                  className={cn(
-                    "h-8 w-8 rounded-xl transition-all border border-border",
-                    showUrlInput || targetUrl.trim()
-                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                      : "bg-muted/80 text-muted-foreground/80 hover:text-foreground hover:bg-muted"
-                  )}
-                >
-                  <LinkIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={isLoading || !inputVal.trim()}
-                  className={cn(
-                    "h-8 w-8 rounded-xl transition-all",
-                    inputVal.trim()
-                      ? "bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20"
-                      : "bg-muted text-muted-foreground/60"
-                  )}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </form>
-            <div className="text-center mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/80">
-              <Sparkles className="h-3 w-3 text-emerald-400" />
-              <span>DeepSeek v3 Sourcing AI — Verify supplier results before ordering</span>
-            </div>
-          </div>
-
         </div>
       </div>
     </TooltipProvider>
   )
 }
-

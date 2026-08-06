@@ -40,16 +40,17 @@ export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult
 
     for (let i = 0; i < 5; i++) {
       const response = await generateText({
-        model: openai(model),
+        model: openai.chat(model || 'gpt-4o-mini'),
         system: systemPrompt,
         messages: sdkMessages,
         tools
       })
 
       if (response.usage) {
-        totalUsage.prompt += (response.usage as any).promptTokens || 0
-        totalUsage.completion += (response.usage as any).completionTokens || 0
-        totalUsage.total += (response.usage as any).totalTokens || 0
+        const u = response.usage as any
+        totalUsage.prompt += u.promptTokens ?? u.inputTokens ?? 0
+        totalUsage.completion += u.completionTokens ?? u.outputTokens ?? 0
+        totalUsage.total += u.totalTokens ?? ((u.promptTokens ?? u.inputTokens ?? 0) + (u.completionTokens ?? u.outputTokens ?? 0))
       }
 
       if (response.toolCalls && response.toolCalls.length > 0) {
@@ -87,6 +88,13 @@ export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult
   } catch (err: any) {
     console.error('OpenAI generation error:', err)
     if (err instanceof AiError) throw err
+    const statusCode = err?.statusCode || err?.status
+    if (statusCode === 401 || statusCode === 403) {
+      throw new AiError(`OpenAI rejected the API key: ${err?.message || ''}`, {
+        code: 'invalid_key',
+        status: 401,
+      })
+    }
     throw toNetworkError(err)
   }
 }

@@ -16,6 +16,7 @@ import {
   isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
 import { supabaseAdmin } from './admin-client'
+import { sendSendDmText, sendSendDmMedia } from '@/lib/whatsapp/senddm-api'
 
 // ------------------------------------------------------------
 // Flows-side Meta sender (interactive variants).
@@ -93,7 +94,17 @@ export async function engineSendText(
 
   const accessToken = decrypt(config.access_token)
 
+import { sendSendDmText, sendSendDmMedia } from '@/lib/whatsapp/senddm-api'
+
   const attempt = async (phone: string): Promise<string> => {
+    if (config.phone_number_id === 'senddm' || (config as any).provider === 'senddm') {
+      const r = await sendSendDmText({
+        apiKey: accessToken,
+        to: phone,
+        text: args.text,
+      })
+      return r.messageId
+    }
     const r = await sendTextMessage({
       phoneNumberId: config.phone_number_id,
       accessToken,
@@ -204,6 +215,16 @@ export async function engineSendMedia(
   const accessToken = decrypt(config.access_token)
 
   const attempt = async (phone: string): Promise<string> => {
+    if (config.phone_number_id === 'senddm' || (config as any).provider === 'senddm') {
+      const r = await sendSendDmMedia({
+        apiKey: accessToken,
+        to: phone,
+        link: args.link,
+        caption: args.caption,
+        filename: args.filename,
+      })
+      return r.messageId
+    }
     const r = await sendMediaMessage({
       phoneNumberId: config.phone_number_id,
       accessToken,

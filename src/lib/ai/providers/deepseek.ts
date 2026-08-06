@@ -74,7 +74,7 @@ export async function generateDeepSeek(args: ProviderArgs): Promise<ProviderResu
 
         sdkMessages.push({
           role: 'user',
-          content: `[System Context - Tool Execution Output]:\n${toolSummaries.join('\n\n')}\n\nPlease formulate a final helpful response for the user using the tool output above.`
+          content: `[Internal Business Data & Sourcing Output]:\n${toolSummaries.join('\n\n')}\n\nRespond directly to the customer on WhatsApp in a warm, helpful, and conversational tone.`
         })
       } else {
         finalResponseText = response.text || ''

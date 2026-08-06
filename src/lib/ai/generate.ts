@@ -39,9 +39,20 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
   }
 
   let result: { text: string; usage: AiUsage | null }
-  
-  // Force DeepSeek as requested by user
-  result = await generateDeepSeek(providerArgs)
+
+  switch (config.provider) {
+    case 'openai':
+      result = await generateOpenAi(providerArgs)
+      break
+    case 'anthropic':
+      result = await generateAnthropic(providerArgs)
+      break
+    case 'deepseek':
+      result = await generateDeepSeek(providerArgs)
+      break
+    default:
+      result = await generateDeepSeek(providerArgs)
+  }
 
   return parseGeneration(result.text, result.usage)
 }

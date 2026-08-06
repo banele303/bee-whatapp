@@ -18,19 +18,17 @@ function config(overrides: Partial<AiConfig> = {}): AiConfig {
 }
 
 function okResponse(json: unknown): Response {
-  return {
-    ok: true,
+  return new Response(JSON.stringify(json), {
     status: 200,
-    json: async () => json,
-  } as unknown as Response
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 function errResponse(status: number, json: unknown): Response {
-  return {
-    ok: false,
+  return new Response(JSON.stringify(json), {
     status,
-    json: async () => json,
-  } as unknown as Response
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 beforeEach(() => {
@@ -74,7 +72,17 @@ describe('generateReply — OpenAI', () => {
   it('calls the chat completions endpoint and returns the reply', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       okResponse({
-        choices: [{ message: { content: 'Sure — happy to help!' } }],
+        id: 'chatcmpl-123',
+        object: 'chat.completion',
+        created: 123456789,
+        model: 'gpt-test',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            message: { role: 'assistant', content: 'Sure — happy to help!' },
+          },
+        ],
         usage: { prompt_tokens: 42, completion_tokens: 8, total_tokens: 50 },
       }),
     )
@@ -93,7 +101,8 @@ describe('generateReply — OpenAI', () => {
     })
     const [url, opts] = fetchMock.mock.calls[0]
     expect(url).toContain('api.openai.com')
-    expect(opts.headers.Authorization).toBe('Bearer sk-test')
+    const authHeader = opts.headers?.Authorization || opts.headers?.authorization || (typeof opts.headers?.get === 'function' ? opts.headers.get('authorization') : undefined)
+    expect(authHeader).toBe('Bearer sk-test')
   })
 
   it('maps a 401 to an invalid_key AiError', async () => {
@@ -116,7 +125,21 @@ describe('generateReply — OpenAI', () => {
   it('throws on an empty completion', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(okResponse({ choices: [{ message: { content: '' } }] })),
+      vi.fn().mockResolvedValue(
+        okResponse({
+          id: 'chatcmpl-124',
+          object: 'chat.completion',
+          created: 123456789,
+          model: 'gpt-test',
+          choices: [
+            {
+              index: 0,
+              finish_reason: 'stop',
+              message: { role: 'assistant', content: '' },
+            },
+          ],
+        }),
+      ),
     )
     await expect(
       generateReply({

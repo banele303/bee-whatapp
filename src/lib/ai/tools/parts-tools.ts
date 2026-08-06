@@ -63,7 +63,7 @@ export const searchInventoryTool = (accountId: string) => ({
 })
 
 export const createQuoteTool = (accountId: string, contactId?: string) => ({
-  description: 'Create a formal quote for the customer. Use this when the customer wants to buy a part or asks for a price estimate.',
+  description: 'Create an official quotation for the customer. MUST be called whenever the customer requests a quote, price estimate, or breakdown for products/services.',
   parameters: z.object({
     items: z.array(z.object({
       sku: z.string(),

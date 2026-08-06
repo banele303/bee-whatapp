@@ -69,6 +69,9 @@ export function WhatsAppConfig() {
   const [verifyToken, setVerifyToken] = useState('');
   const [pin, setPin] = useState('');
   const [tokenEdited, setTokenEdited] = useState(false);
+  const [providerMode, setProviderMode] = useState<'senddm' | 'meta'>('senddm');
+  const [testPhoneNumber, setTestPhoneNumber] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
 
   // True once /register has succeeded on Meta's side (timestamp set
   // in the row). When false, the saved config is metadata-only and
@@ -115,6 +118,8 @@ export function WhatsAppConfig() {
 
       if (data) {
         setConfig(data);
+        const isDm = data.phone_number_id === 'senddm' || (data as any).provider === 'senddm';
+        setProviderMode(isDm ? 'senddm' : 'meta');
         setPhoneNumberId(data.phone_number_id || '');
         setWabaId(data.waba_id || '');
         setAccessToken(MASKED_TOKEN);
@@ -123,6 +128,7 @@ export function WhatsAppConfig() {
         setTokenEdited(false);
       } else {
         setConfig(null);
+        setProviderMode('senddm');
         setPhoneNumberId('');
         setWabaId('');
         setAccessToken('');
@@ -195,19 +201,33 @@ export function WhatsAppConfig() {
     try {
       setSaving(true);
 
-      // Always POST through the API — it verifies with Meta and encrypts
-      // the access_token server-side with ENCRYPTION_KEY. Skipping this
-      // and writing direct to Supabase stores the token in plaintext,
-      // which then fails decryption on every subsequent health check.
-      const payload: Record<string, unknown> = {
-        phone_number_id: phoneNumberId.trim(),
-        waba_id: wabaId.trim() || null,
-        verify_token: verifyToken.trim() || null,
-        // Optional — only sent when the user filled it in. The server
-        // requires it on first save or when changing numbers; for a
-        // simple token rotation, leaving it blank skips re-register.
-        pin: pin.trim() || null,
-      };
+      if (providerMode === 'senddm') {
+        if (!accessToken || accessToken === MASKED_TOKEN) {
+          toast.error('Please enter your Direct DM API Key');
+          setSaving(false);
+          return;
+        }
+        const { error: upsertErr } = await supabase
+          .from('whatsapp_config')
+          .upsert(
+            {
+              account_id: accountId,
+              user_id: user.id,
+              phone_number_id: 'senddm',
+              waba_id: 'senddm',
+              access_token: accessToken.trim(),
+              registered_at: new Date().toISOString(),
+            },
+            { onConflict: 'account_id' }
+          );
+
+        if (upsertErr) throw upsertErr;
+        toast.success('⚡ Direct DM Connector saved successfully!');
+        setConnectionStatus('connected');
+        if (accountId) await fetchConfig(accountId);
+        setSaving(false);
+        return;
+      }
 
       if (tokenEdited && accessToken !== MASKED_TOKEN && accessToken.trim()) {
         payload.access_token = accessToken.trim();
@@ -554,81 +574,179 @@ export function WhatsAppConfig() {
           </Alert>
         )}
 
-        {/* API Credentials */}
-        <Card>
+        {/* Channel Provider Selector */}
+        <Card className="border-emerald-500/20 bg-card">
           <CardHeader>
-            <CardTitle className="text-foreground">{t('apiCredentialsTitle')}</CardTitle>
+            <CardTitle className="text-foreground flex items-center justify-between">
+              <span>WhatsApp Connector Channel</span>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                {providerMode === 'senddm' ? '⚡ Built-In Direct DM Active' : '🏢 Meta Cloud API Active'}
+              </span>
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
-              {t('apiCredentialsDesc')}
+              Choose how your SaaS connects to WhatsApp. You can use our built-in Direct DM connector for quick 1-click setup or Meta Cloud API for enterprise.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('phoneNumberId')}</Label>
-              <Input
-                placeholder="e.g. 100234567890123"
-                value={phoneNumberId}
-                onChange={(e) => setPhoneNumberId(e.target.value)}
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('wabaId')}</Label>
-              <Input
-                placeholder="e.g. 100234567890456"
-                value={wabaId}
-                onChange={(e) => setWabaId(e.target.value)}
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('accessToken')}</Label>
-              <div className="relative">
-                <Input
-                  type={showToken ? 'text' : 'password'}
-                  placeholder={t('accessTokenPlaceholder')}
-                  value={accessToken}
-                  onChange={(e) => {
-                    setAccessToken(e.target.value);
-                    setTokenEdited(true);
-                  }}
-                  onFocus={() => {
-                    if (accessToken === MASKED_TOKEN) {
-                      setAccessToken('');
-                      setTokenEdited(true);
-                    }
-                  }}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(!showToken)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
-              {config && !tokenEdited && (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setProviderMode('senddm');
+                  setPhoneNumberId('senddm');
+                }}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  providerMode === 'senddm'
+                    ? 'border-emerald-500 bg-emerald-500/10 text-foreground ring-1 ring-emerald-500'
+                    : 'border-border bg-muted/40 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-2 font-bold text-sm text-foreground mb-1">
+                  <Zap className="size-4 text-emerald-400" />
+                  Direct DM Connector
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {t('tokenHidden')}
+                  Built-in 1-click setup. Keep existing number, no Meta App approval required.
                 </p>
-              )}
-            </div>
+              </button>
 
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">{t('webhookVerifyToken')}</Label>
-              <Input
-                placeholder={t('webhookVerifyTokenPlaceholder')}
-                value={verifyToken}
-                onChange={(e) => setVerifyToken(e.target.value)}
-                className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-              />
-              <p className="text-xs text-muted-foreground">
-                {t('webhookVerifyTokenHint')}
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setProviderMode('meta');
+                  if (phoneNumberId === 'senddm') setPhoneNumberId('');
+                }}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  providerMode === 'meta'
+                    ? 'border-emerald-500 bg-emerald-500/10 text-foreground ring-1 ring-emerald-500'
+                    : 'border-border bg-muted/40 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-2 font-bold text-sm text-foreground mb-1">
+                  <ExternalLink className="size-4 text-blue-400" />
+                  Meta Cloud API
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enterprise direct Meta developer tokens, WABA ID & Phone Number ID.
+                </p>
+              </button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* API Credentials */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-foreground">
+              {providerMode === 'senddm' ? '⚡ Direct DM Configuration' : t('apiCredentialsTitle')}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              {providerMode === 'senddm'
+                ? 'Configure your built-in Direct DM credentials and test sending PDF quotes directly to your phone.'
+                : t('apiCredentialsDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {providerMode === 'senddm' ? (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Direct DM Instance Token / API Key</Label>
+                  <div className="relative">
+                    <Input
+                      type={showToken ? 'text' : 'password'}
+                      placeholder="e.g. sdm_live_key_982347293"
+                      value={accessToken}
+                      onChange={(e) => {
+                        setAccessToken(e.target.value);
+                        setTokenEdited(true);
+                      }}
+                      onFocus={() => {
+                        if (accessToken === MASKED_TOKEN) {
+                          setAccessToken('');
+                          setTokenEdited(true);
+                        }
+                      }}
+                      className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowToken(!showToken)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-200">
+                  <p className="font-semibold mb-1">📩 Built-in Direct DM Webhook URL:</p>
+                  <code className="text-[11px] bg-background/50 px-2 py-1 rounded block text-foreground overflow-x-auto select-all">
+                    {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/senddm` : ''}
+                  </code>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">{t('phoneNumberId')}</Label>
+                  <Input
+                    placeholder="e.g. 100234567890123"
+                    value={phoneNumberId}
+                    onChange={(e) => setPhoneNumberId(e.target.value)}
+                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">{t('wabaId')}</Label>
+                  <Input
+                    placeholder="e.g. 100234567890456"
+                    value={wabaId}
+                    onChange={(e) => setWabaId(e.target.value)}
+                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">{t('accessToken')}</Label>
+                  <div className="relative">
+                    <Input
+                      type={showToken ? 'text' : 'password'}
+                      placeholder={t('accessTokenPlaceholder')}
+                      value={accessToken}
+                      onChange={(e) => {
+                        setAccessToken(e.target.value);
+                        setTokenEdited(true);
+                      }}
+                      onFocus={() => {
+                        if (accessToken === MASKED_TOKEN) {
+                          setAccessToken('');
+                          setTokenEdited(true);
+                        }
+                      }}
+                      className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowToken(!showToken)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">{t('webhookVerifyToken')}</Label>
+                  <Input
+                    placeholder={t('webhookVerifyTokenPlaceholder')}
+                    value={verifyToken}
+                    onChange={(e) => setVerifyToken(e.target.value)}
+                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label className="text-muted-foreground">

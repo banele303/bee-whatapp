@@ -35,6 +35,7 @@ import {
   type InteractiveMessagePayload,
 } from '@/lib/whatsapp/interactive';
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption';
+import { sendSendDmText, sendSendDmMedia } from '@/lib/whatsapp/senddm-api';
 import { supabaseAdmin } from '@/lib/flows/admin-client';
 import {
   sanitizePhoneForMeta,
@@ -330,6 +331,27 @@ export async function sendMessageToConversation(
   }
 
   const attempt = async (phone: string): Promise<string> => {
+    const isDirectDm = config.phone_number_id === 'senddm' || (config as any).provider === 'senddm';
+
+    if (isDirectDm) {
+      if (isMediaKind) {
+        const result = await sendSendDmMedia({
+          apiKey: accessToken,
+          to: phone,
+          link: mediaUrl!,
+          caption: contentText || undefined,
+          filename: filename || undefined,
+        });
+        return result.messageId;
+      }
+      const result = await sendSendDmText({
+        apiKey: accessToken,
+        to: phone,
+        text: contentText || '',
+      });
+      return result.messageId;
+    }
+
     if (messageType === 'template') {
       const result = await sendTemplateMessage({
         phoneNumberId: config.phone_number_id,

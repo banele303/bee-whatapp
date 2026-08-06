@@ -192,17 +192,38 @@ export async function dispatchInboundToAiReply(
 
     // Automatically attach and send the actual PDF Document file to WhatsApp
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bee-whatapp.vercel.app'
-    const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
-    const { data: recentQuotes } = await db
-      .from('quotes_and_invoices')
-      .select('id, quote_number')
-      .eq('account_id', accountId)
-      .gte('created_at', twoMinsAgo)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const threeMinsAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString()
+    
+    let recentQuote: { id: string; quote_number: string } | null = null
+    if (contactId) {
+      const { data: cQuotes } = await db
+        .from('quotes_and_invoices')
+        .select('id, quote_number')
+        .eq('account_id', accountId)
+        .eq('contact_id', contactId)
+        .gte('created_at', threeMinsAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (cQuotes && cQuotes.length > 0) {
+        recentQuote = cQuotes[0]
+      }
+    }
 
-    if (recentQuotes && recentQuotes.length > 0) {
-      const q = recentQuotes[0]
+    if (!recentQuote) {
+      const { data: aQuotes } = await db
+        .from('quotes_and_invoices')
+        .select('id, quote_number')
+        .eq('account_id', accountId)
+        .gte('created_at', threeMinsAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (aQuotes && aQuotes.length > 0) {
+        recentQuote = aQuotes[0]
+      }
+    }
+
+    if (recentQuote) {
+      const q = recentQuote
       const pdfUrl = `${appUrl}/api/quotes/${q.id}/download/Quotation-${q.quote_number}.pdf`
       try {
         await engineSendMedia({
@@ -212,7 +233,7 @@ export async function dispatchInboundToAiReply(
           contactId,
           kind: 'document',
           link: pdfUrl,
-          caption: `📄 Official Auto Parts Quotation PDF (${q.quote_number})`,
+          caption: `📄 Official Quotation PDF (${q.quote_number})`,
           filename: `Quotation-${q.quote_number}.pdf`,
         })
       } catch (mediaErr) {

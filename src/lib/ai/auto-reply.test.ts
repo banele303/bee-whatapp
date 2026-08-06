@@ -36,19 +36,20 @@ vi.mock('./admin-client', () => ({
         }
         return chain
       }
-      // conversations
-      return {
-        select: () => ({
-          eq: () => ({
-            maybeSingle: () =>
-              Promise.resolve({ data: h.state.conv, error: null }),
-          }),
-        }),
+      // conversations / default
+      const defaultChain: any = {
+        select: () => defaultChain,
+        eq: () => defaultChain,
+        gte: () => defaultChain,
+        order: () => defaultChain,
+        limit: () => Promise.resolve({ data: [], error: null }),
+        maybeSingle: () => Promise.resolve({ data: h.state.conv, error: null }),
         update: (payload: Record<string, unknown>) => {
           h.state.updatePayload = payload
           return { eq: () => Promise.resolve({ error: null }) }
         },
       }
+      return defaultChain
     },
     rpc: (name: string, args: unknown) => {
       h.state.rpcCalls.push({ name, args })
