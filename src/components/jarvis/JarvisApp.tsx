@@ -37,6 +37,14 @@ export function JarvisApp() {
     return () => clearInterval(id);
   }, []);
 
+  const [chatInput, setChatInput] = useState("");
+  const handleSendChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !session.active) return;
+    session.sendUserMessage(chatInput.trim());
+    setChatInput("");
+  };
+
   // This tab hosts the live session, or mirrors another tab's session.
   // A mirror only trusts sessionActive if the host heartbeat is fresh.
   const heartbeatFresh =
@@ -123,6 +131,39 @@ export function JarvisApp() {
               </p>
             )}
             <Transcript />
+            
+            {session.active && (
+              <form onSubmit={handleSendChat} className="w-full mt-auto pb-4 pt-2 shrink-0">
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Type a command (e.g., 'Check my unread emails')..."
+                    className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] pl-4 pr-16 py-2 text-[12px] text-white/80 outline-none transition focus:border-cyan-300/40 focus:bg-cyan-400/[0.04]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className="absolute right-2 px-2.5 py-1 rounded bg-cyan-400/10 text-cyan-300 text-[10px] tracking-[0.1em] border border-cyan-400/20 hover:bg-cyan-400/20 transition disabled:opacity-30 disabled:hover:bg-cyan-400/10"
+                  >
+                    SEND
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {!session.active && (
+              <div className="w-full mt-auto pb-4 pt-2 text-center shrink-0">
+                <button
+                  onClick={() => void session.activate()}
+                  disabled={session.connecting}
+                  className="mono mx-auto rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-4 py-2 text-[11px] tracking-[0.2em] text-cyan-200 uppercase transition hover:bg-cyan-400/20 hover:shadow-[0_0_30px_rgba(69,216,255,0.15)] disabled:opacity-50"
+                >
+                  {session.connecting ? "Connecting..." : "Connect Jarvis to type commands"}
+                </button>
+              </div>
+            )}
           </main>
 
           <RightPanel />

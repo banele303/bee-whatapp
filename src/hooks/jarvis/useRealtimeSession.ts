@@ -18,6 +18,8 @@ interface RealtimeSession {
   getLevel: () => number;
   /** Inject a system note (e.g. "Gmail connected") and have Jarvis respond. */
   notifySystem: (text: string) => void;
+  /** Send a typed text command from the user over the session. */
+  sendUserMessage: (text: string) => void;
 }
 
 function rms(analyser: AnalyserNode, buf: Uint8Array<ArrayBuffer>): number {
@@ -392,6 +394,21 @@ export function useRealtimeSession(): RealtimeSession {
     [send]
   );
 
+  const sendUserMessage = useCallback(
+    (text: string) => {
+      send({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text }],
+        },
+      });
+      send({ type: "response.create" });
+    },
+    [send]
+  );
+
   const getLevel = useCallback((): number => {
     const buf = levelBufRef.current;
     if (!buf) return 0;
@@ -425,5 +442,5 @@ export function useRealtimeSession(): RealtimeSession {
     };
   }, [setVoiceState]);
 
-  return { orbState, active, connecting, error, activate, deactivate, getLevel, notifySystem };
+  return { orbState, active, connecting, error, activate, deactivate, getLevel, notifySystem, sendUserMessage };
 }
