@@ -10,7 +10,8 @@ const JARVIS_INSTRUCTIONS = `You are Jarvis, a calm, precise, quietly witty AI c
 Operational rules:
 - Use tools proactively. If the user asks about email, calendar, or notes, call the matching tool rather than guessing.
 - When the user states a preference, fact about themselves, project, or favorite tool — even in passing — call "remember" to store it. Confirm briefly: "Noted."
-- If a tool reports a service is not connected, offer to connect it. If the user agrees, call "connect_service".
+- CRITICAL — Connection status: The system prompt contains a live "Integration connections status" section. This is always the authoritative ground truth. If a service shows "connected", it IS connected — call its tool immediately WITHOUT calling "connect_service" or asking the user to reconnect. NEVER tell the user a service is broken if the system prompt shows it as connected.
+- If a service shows "available" (not yet connected), offer to connect it. If the user agrees, call "connect_service".
 - After initiating a connection, tell the user an authentication window is opening and to complete sign-in there.
 - "What can you connect to?" → call "list_services" and summarize.
 - You CAN read Notion page contents: "search_notes" finds pages (returns their ids), "read_note" retrieves a page's full content. When asked what's inside a note or to read it back, call "read_note" — never claim you cannot access page contents.
@@ -316,7 +317,7 @@ export const chat = action({
     const historyMessages = await ctx.runQuery(api.messages.list, {});
     const apiHistory = historyMessages
       .filter((m) => m.status === "final" || m.status === "interrupted")
-      .slice(-15) // Keep last 15 messages for context
+      .slice(-8) // Keep last 8 messages — fewer stale messages means less confusing historical context
       .map((m) => ({
         role: m.role,
         content: m.text,

@@ -17,6 +17,7 @@ export function JarvisApp() {
   const seed = useMutation(api.init.seed);
   const syncConnections = useAction(api.composio.syncConnections);
   const checkConnection = useAction(api.composio.checkConnection);
+  const clearMessages = useMutation(api.messages.clear);
 
   const voiceState = useQuery(api.voiceState.get);
   const connections = useQuery(api.connections.list) ?? [];
@@ -38,11 +39,17 @@ export function JarvisApp() {
   }, []);
 
   const [chatInput, setChatInput] = useState("");
+  const [cleared, setCleared] = useState(false);
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !session.active) return;
     session.sendUserMessage(chatInput.trim());
     setChatInput("");
+  };
+  const handleClearChat = async () => {
+    await clearMessages({});
+    setCleared(true);
+    setTimeout(() => setCleared(false), 2000);
   };
 
   // This tab hosts the live session, or mirrors another tab's session.
@@ -134,21 +141,31 @@ export function JarvisApp() {
             
             {session.active && (
               <form onSubmit={handleSendChat} className="w-full mt-auto pb-4 pt-2 shrink-0">
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Type a command (e.g., 'Check my unread emails')..."
-                    className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] pl-4 pr-16 py-2 text-[12px] text-white/80 outline-none transition focus:border-primary/40 focus:bg-primary/[0.04]"
-                  />
+                <div className="relative flex items-center gap-2">
                   <button
-                    type="submit"
-                    disabled={!chatInput.trim()}
-                    className="absolute right-2 px-2.5 py-1 rounded bg-primary/10 text-primary text-[10px] tracking-[0.1em] border border-primary/20 hover:bg-primary/20 transition disabled:opacity-30 disabled:hover:bg-primary/10"
+                    type="button"
+                    onClick={handleClearChat}
+                    title="Clear chat history"
+                    className="mono shrink-0 px-2.5 py-2 rounded-lg border border-white/10 bg-white/[0.04] text-white/30 text-[10px] tracking-[0.1em] hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400/70 transition"
                   >
-                    SEND
+                    {cleared ? "✓ CLEARED" : "CLEAR"}
                   </button>
+                  <div className="relative flex flex-1 items-center">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Type a command (e.g., 'Check my unread emails')..."
+                      className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] pl-4 pr-16 py-2 text-[12px] text-white/80 outline-none transition focus:border-primary/40 focus:bg-primary/[0.04]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim()}
+                      className="absolute right-2 px-2.5 py-1 rounded bg-primary/10 text-primary text-[10px] tracking-[0.1em] border border-primary/20 hover:bg-primary/20 transition disabled:opacity-30 disabled:hover:bg-primary/10"
+                    >
+                      SEND
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
