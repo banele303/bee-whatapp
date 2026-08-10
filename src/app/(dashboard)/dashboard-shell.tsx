@@ -108,10 +108,14 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { JarvisConvexProvider } from "@/components/jarvis/ConvexProvider";
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <DashboardShellInner>{children}</DashboardShellInner>
-    </AuthProvider>
+    <JarvisConvexProvider>
+      <AuthProvider>
+        <DashboardShellInner>{children}</DashboardShellInner>
+      </AuthProvider>
+    </JarvisConvexProvider>
   );
 }
