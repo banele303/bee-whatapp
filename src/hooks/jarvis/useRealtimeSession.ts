@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { OrbState } from "@/components/jarvis/orb/Orb";
+import { OrbState } from "@/lib/jarvis/types";
 
 interface RealtimeSession {
   orbState: OrbState;
