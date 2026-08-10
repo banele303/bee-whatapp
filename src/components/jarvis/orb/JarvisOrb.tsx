@@ -57,7 +57,11 @@ export function JarvisOrb({
 
   return (
     <div className="relative flex flex-col items-center">
-      <div className="relative h-[340px] w-[420px] xl:h-[400px] xl:w-[500px]">
+      <div className={`relative transition-all duration-500 ease-in-out ${
+        active 
+          ? "h-[100px] w-[130px] md:h-[110px] md:w-[150px] xl:h-[130px] xl:w-[170px]" 
+          : "h-[280px] w-[340px] md:h-[320px] md:w-[400px] xl:h-[360px] xl:w-[450px]"
+      }`}>
         <canvas ref={canvasRef} className="h-full w-full" />
 
         <AnimatePresence>

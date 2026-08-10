@@ -130,7 +130,7 @@ export function JarvisApp() {
                 Session active in another window
               </p>
             )}
-            <Transcript />
+            {session.active && <Transcript />}
             
             {session.active && (
               <form onSubmit={handleSendChat} className="w-full mt-auto pb-4 pt-2 shrink-0">
