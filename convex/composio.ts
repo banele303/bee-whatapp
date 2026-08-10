@@ -106,13 +106,22 @@ export const checkConnection = action({
 
     const composio = getComposio();
     try {
-      const accounts = await composio.connectedAccounts.list({
+      let accounts = await composio.connectedAccounts.list({
         userIds: [String(userId)],
         toolkitSlugs: [toolkit],
       });
-      const active = accounts.items?.find(
+      let active = accounts.items?.find(
         (a: { status: string }) => a.status === "ACTIVE"
       );
+      // Fallback: Check if there's any active connection for this toolkit in the entire account
+      if (!active) {
+        const allAccounts = await composio.connectedAccounts.list({
+          toolkitSlugs: [toolkit],
+        });
+        active = allAccounts.items?.find(
+          (a: { status: string }) => a.status === "ACTIVE"
+        );
+      }
       if (!active) return { connected: false };
 
       await ctx.runMutation(api.connections.upsert, {
@@ -160,9 +169,13 @@ export const syncConnections = action({
     if (!process.env.COMPOSIO_API_KEY) return { synced: false };
     try {
       const composio = getComposio();
-      const accounts = await composio.connectedAccounts.list({
+      let accounts = await composio.connectedAccounts.list({
         userIds: [String(userId)],
       });
+      // Fallback: If no accounts found for specific userId, fetch all connected accounts
+      if (!accounts.items || accounts.items.length === 0) {
+        accounts = await composio.connectedAccounts.list({});
+      }
       for (const account of accounts.items ?? []) {
         const slug = (account.toolkit?.slug ?? "").toLowerCase();
         const svc = SERVICES[slug];
