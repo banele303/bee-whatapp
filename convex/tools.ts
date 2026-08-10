@@ -96,6 +96,15 @@ export const execute = action({
       };
     };
 
+    // Resolve the Composio entity ID (userId) for a given toolkit.
+    // This is the entity ID under which the OAuth token was authorized in Composio.
+    // Falls back to the known playground entity ID if not yet stored.
+    const FALLBACK_ENTITY_ID = "pg-test-5a0013ab-78d8-456a-b529-e9e8039785ae";
+    const getComposioEntityId = async (toolkit: string): Promise<string> => {
+      const connections = await ctx.runQuery(api.connections.list, {});
+      return connections.find((c) => c.toolkit === toolkit)?.composioEntityId ?? FALLBACK_ENTITY_ID;
+    };
+
     const finish = async (result: ToolResult, objectiveDone = "Standing by") => {
       await log("results", "Results retrieved", name.replace(/_/g, " "));
       await setObjective(objectiveDone, "idle");
@@ -230,8 +239,9 @@ export const execute = action({
           await setObjective("Reading inbox");
           await log("executing", "Executing action", "Fetching Gmail messages");
           const composio = getComposio();
+          const gmailEntityId = await getComposioEntityId("gmail");
           const result = await composio.tools.execute("GMAIL_FETCH_EMAILS", {
-            userId: String(userId),
+            userId: gmailEntityId,
             dangerouslySkipVersionCheck: true,
             arguments: {
               query: args.query ?? "is:unread",
@@ -265,8 +275,9 @@ export const execute = action({
           await setObjective("Sending email");
           await log("executing", "Executing action", `Sending email to ${to}`);
           const composio = getComposio();
+          const gmailEntityId = await getComposioEntityId("gmail");
           const result = await composio.tools.execute("GMAIL_SEND_EMAIL", {
-            userId: String(userId),
+            userId: gmailEntityId,
             dangerouslySkipVersionCheck: true,
             arguments: {
               recipient_email: to,
@@ -289,11 +300,12 @@ export const execute = action({
           await setObjective("Scanning calendar");
           await log("executing", "Executing action", "Listing calendar events");
           const composio = getComposio();
+          const calendarEntityId = await getComposioEntityId("googlecalendar");
           const now = new Date();
           const endOfDay = new Date(now);
           endOfDay.setHours(23, 59, 59, 999);
           const result = await composio.tools.execute("GOOGLECALENDAR_EVENTS_LIST", {
-            userId: String(userId),
+            userId: calendarEntityId,
             dangerouslySkipVersionCheck: true,
             arguments: {
               calendar_id: "primary",
@@ -325,9 +337,10 @@ export const execute = action({
           await setObjective("Creating calendar event");
           await log("executing", "Executing action", `Creating "${args.summary}"`);
           const composio = getComposio();
+          const calendarEntityId = await getComposioEntityId("googlecalendar");
           const durationMinutes = Number(args.duration_minutes ?? 30);
           const result = await composio.tools.execute("GOOGLECALENDAR_CREATE_EVENT", {
-            userId: String(userId),
+            userId: calendarEntityId,
             dangerouslySkipVersionCheck: true,
             arguments: {
               summary: args.summary ?? "New event",
@@ -358,8 +371,9 @@ export const execute = action({
           await setObjective("Searching notes");
           await log("executing", "Executing action", `Searching Notion for "${args.query ?? ""}"`);
           const composio = getComposio();
+          const notionEntityId = await getComposioEntityId("notion");
           const result = await composio.tools.execute("NOTION_SEARCH_NOTION_PAGE", {
-            userId: String(userId),
+            userId: notionEntityId,
             dangerouslySkipVersionCheck: true,
             arguments: {
               query: args.query ?? "",
@@ -392,8 +406,9 @@ export const execute = action({
           // No id given: resolve via search first.
           if (!pageId) {
             await log("executing", "Executing action", `Locating "${args.query ?? ""}" in Notion`);
+            const notionEntityId = await getComposioEntityId("notion");
             const search = await composio.tools.execute("NOTION_SEARCH_NOTION_PAGE", {
-              userId: String(userId),
+              userId: notionEntityId,
               dangerouslySkipVersionCheck: true,
               arguments: { query: args.query ?? "", page_size: 5 },
             });
@@ -411,8 +426,9 @@ export const execute = action({
           }
 
           await log("executing", "Executing action", `Reading "${title ?? pageId}"`);
+          const notionEntityId2 = await getComposioEntityId("notion");
           const result = await composio.tools.execute("NOTION_GET_PAGE_MARKDOWN", {
-            userId: String(userId),
+            userId: notionEntityId2,
             dangerouslySkipVersionCheck: true,
             arguments: { page_id: pageId },
           });

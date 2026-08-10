@@ -70,6 +70,7 @@ export default defineSchema({
       v.literal("error")
     ),
     connectedAccountId: v.optional(v.string()),
+    composioEntityId: v.optional(v.string()), // Composio userId / entity ID for tool execution
     authUrl: v.optional(v.string()),
     accountLabel: v.optional(v.string()),
     lastSync: v.optional(v.number()),

@@ -26,6 +26,7 @@ export const upsert = mutation({
       v.literal("error")
     ),
     connectedAccountId: v.optional(v.string()),
+    composioEntityId: v.optional(v.string()),
     authUrl: v.optional(v.string()),
     accountLabel: v.optional(v.string()),
     lastSync: v.optional(v.number()),
@@ -42,6 +43,7 @@ export const upsert = mutation({
         name: args.name,
         status: args.status,
         connectedAccountId: args.connectedAccountId,
+        composioEntityId: args.composioEntityId ?? existing.composioEntityId,
         authUrl: args.authUrl,
         accountLabel: args.accountLabel ?? existing.accountLabel,
         lastSync: args.lastSync ?? existing.lastSync,

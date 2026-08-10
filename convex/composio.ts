@@ -129,6 +129,7 @@ export const checkConnection = action({
         name: service.name,
         status: "connected",
         connectedAccountId: active.id,
+        composioEntityId: (active as any).userId ?? undefined,
         lastSync: Date.now(),
       });
       await ctx.runMutation(api.timeline.log, {
@@ -185,6 +186,7 @@ export const syncConnections = action({
             name: svc.name,
             status: "connected",
             connectedAccountId: account.id,
+            composioEntityId: (account as any).userId ?? undefined,
           });
         }
       }

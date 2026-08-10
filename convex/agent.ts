@@ -292,10 +292,24 @@ export const chat = action({
       // ignore
     }
 
+    let connectionsSection = "";
+    try {
+      const connections = await ctx.runQuery(api.connections.list, {});
+      const lines = connections.map(
+        (c) => `- ${c.name} (${c.toolkit}): ${c.status}${c.error ? ` (Error: ${c.error})` : ""}`
+      );
+      if (lines.length > 0) {
+        connectionsSection = `\n\nIntegration connections status (treat as real-time ground truth):\n${lines.join("\n")}`;
+      }
+    } catch (e) {
+      // ignore
+    }
+
     const now = new Date();
     const systemPrompt =
       JARVIS_INSTRUCTIONS +
       profileSection +
+      connectionsSection +
       `\n\nActive Timezone: ${process.env.TZ ?? "UTC"}.\nCurrent date and time: ${now.toString()}. Use this to resolve relative dates.`;
 
     // 3. Load latest message history
