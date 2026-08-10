@@ -14,16 +14,21 @@ import type * as briefing from "../briefing.js";
 import type * as composio from "../composio.js";
 import type * as connections from "../connections.js";
 import type * as dashboard from "../dashboard.js";
+import type * as dealerStats from "../dealerStats.js";
+import type * as financeApplications from "../financeApplications.js";
 import type * as http from "../http.js";
 import type * as init from "../init.js";
+import type * as inventory from "../inventory.js";
 import type * as memory from "../memory.js";
 import type * as messages from "../messages.js";
 import type * as objective from "../objective.js";
 import type * as profiles from "../profiles.js";
 import type * as reset from "../reset.js";
+import type * as testDrives from "../testDrives.js";
 import type * as timeline from "../timeline.js";
 import type * as todos from "../todos.js";
 import type * as tools from "../tools.js";
+import type * as tradeIns from "../tradeIns.js";
 import type * as voiceState from "../voiceState.js";
 
 import type {
@@ -39,16 +44,21 @@ declare const fullApi: ApiFromModules<{
   composio: typeof composio;
   connections: typeof connections;
   dashboard: typeof dashboard;
+  dealerStats: typeof dealerStats;
+  financeApplications: typeof financeApplications;
   http: typeof http;
   init: typeof init;
+  inventory: typeof inventory;
   memory: typeof memory;
   messages: typeof messages;
   objective: typeof objective;
   profiles: typeof profiles;
   reset: typeof reset;
+  testDrives: typeof testDrives;
   timeline: typeof timeline;
   todos: typeof todos;
   tools: typeof tools;
+  tradeIns: typeof tradeIns;
   voiceState: typeof voiceState;
 }>;
 

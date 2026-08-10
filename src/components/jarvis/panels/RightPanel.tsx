@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,6 +19,7 @@ import {
   TriangleAlert,
   Newspaper,
   Activity,
+  ChevronRight,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 
@@ -60,6 +62,7 @@ function timeAgo(ts: number): string {
 export function RightPanel() {
   const facts = useQuery(api.memory.list) ?? [];
   const events = useQuery(api.timeline.list) ?? [];
+  const [collapsed, setCollapsed] = useState(false);
 
   const grouped = new Map<string, typeof facts>();
   for (const f of facts) {
@@ -69,89 +72,117 @@ export function RightPanel() {
   }
 
   return (
-    <aside className="flex min-h-0 flex-col gap-3">
-      {/* Memory */}
-      <section className="glass-card flex max-h-[44%] min-h-[160px] flex-col p-3.5">
-        <div className="mb-2.5 flex items-center gap-2">
-          <Brain className="h-3.5 w-3.5 text-white/35" />
-          <h3 className="label-xs">Memory</h3>
-          <span className="mono ml-auto text-[10px] text-white/25">{facts.length} facts</span>
-        </div>
-        <div className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto">
-          {facts.length === 0 && (
-            <p className="text-[11.5px] text-white/25">
-              Nothing yet. Tell Jarvis something to remember.
-            </p>
-          )}
-          {[...grouped.entries()].map(([category, items]) => (
-            <div key={category}>
-              <p className="label-xs mb-1.5 !text-[9px] !text-white/25">
-                {CATEGORY_LABELS[category] ?? category}
-              </p>
-              <AnimatePresence initial={false}>
-                {items.map((f) => (
-                  <motion.div
-                    key={f._id}
-                    layout
-                    initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
-                    animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, x: -16 }}
-                    transition={{ duration: 0.35 }}
-                    className="mb-1.5 rounded-lg border border-white/[0.05] bg-white/[0.025] px-2.5 py-1.5"
-                  >
-                    <p className="text-[10.5px] tracking-wide text-white/35 capitalize">{f.key}</p>
-                    <p className="text-[12.5px] text-white/80">{f.value}</p>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          ))}
-        </div>
-      </section>
+    <div className="flex min-h-0 items-stretch">
+      {/* Collapse toggle strip */}
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        title={collapsed ? "Expand panel" : "Collapse panel"}
+        className="group flex w-5 shrink-0 flex-col items-center justify-center gap-1 rounded-l-xl border border-r-0 border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition"
+      >
+        <motion.div
+          animate={{ rotate: collapsed ? 180 : 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <ChevronRight className="h-3 w-3 text-white/20 group-hover:text-white/50 transition" />
+        </motion.div>
+      </button>
 
-      {/* Activity timeline */}
-      <section className="glass-card flex min-h-0 flex-1 flex-col p-3.5">
-        <div className="mb-2.5 flex items-center gap-2">
-          <Activity className="h-3.5 w-3.5 text-white/35" />
-          <h3 className="label-xs">System Activity</h3>
-        </div>
-        <div className="scroll-thin relative min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
-          {/* spine */}
-          <div className="absolute top-1 bottom-1 left-[7px] w-px bg-white/[0.07]" />
-          <AnimatePresence initial={false}>
-            {events.map((e) => {
-              const meta = KIND_META[e.kind] ?? { icon: <Activity />, color: "text-white/40" };
-              return (
-                <motion.div
-                  key={e._id}
-                  layout
-                  initial={{ opacity: 0, y: -12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="relative mb-2.5 flex gap-2.5 pl-0.5"
-                >
-                  <span
-                    className={`z-10 mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#0a0f18] ${meta.color} [&>svg]:h-3 [&>svg]:w-3`}
-                  >
-                    {meta.icon}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-[12px] font-medium text-white/75">{e.label}</p>
-                      <span className="mono ml-auto shrink-0 text-[9.5px] text-white/25">
-                        {timeAgo(e.createdAt)}
-                      </span>
-                    </div>
-                    {e.detail && (
-                      <p className="truncate text-[11px] text-white/35">{e.detail}</p>
-                    )}
+      {/* Panel content */}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.aside
+            key="right-panel"
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: "auto" }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden"
+          >
+            {/* Memory */}
+            <section className="glass-card flex max-h-[44%] min-h-[160px] flex-col p-3.5">
+              <div className="mb-2.5 flex items-center gap-2">
+                <Brain className="h-3.5 w-3.5 text-white/35" />
+                <h3 className="label-xs">Memory</h3>
+                <span className="mono ml-auto text-[10px] text-white/25">{facts.length} facts</span>
+              </div>
+              <div className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto">
+                {facts.length === 0 && (
+                  <p className="text-[11.5px] text-white/25">
+                    Nothing yet. Tell Jarvis something to remember.
+                  </p>
+                )}
+                {[...grouped.entries()].map(([category, items]) => (
+                  <div key={category}>
+                    <p className="label-xs mb-1.5 !text-[9px] !text-white/25">
+                      {CATEGORY_LABELS[category] ?? category}
+                    </p>
+                    <AnimatePresence initial={false}>
+                      {items.map((f) => (
+                        <motion.div
+                          key={f._id}
+                          layout
+                          initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, x: -16 }}
+                          transition={{ duration: 0.35 }}
+                          className="mb-1.5 rounded-lg border border-white/[0.05] bg-white/[0.025] px-2.5 py-1.5"
+                        >
+                          <p className="text-[10.5px] tracking-wide text-white/35 capitalize">{f.key}</p>
+                          <p className="text-[12.5px] text-white/80">{f.value}</p>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-      </section>
-    </aside>
+                ))}
+              </div>
+            </section>
+
+            {/* Activity timeline */}
+            <section className="glass-card flex min-h-0 flex-1 flex-col p-3.5">
+              <div className="mb-2.5 flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5 text-white/35" />
+                <h3 className="label-xs">System Activity</h3>
+              </div>
+              <div className="scroll-thin relative min-h-0 flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
+                {/* spine */}
+                <div className="absolute top-1 bottom-1 left-[7px] w-px bg-white/[0.07]" />
+                <AnimatePresence initial={false}>
+                  {events.map((e) => {
+                    const meta = KIND_META[e.kind] ?? { icon: <Activity />, color: "text-white/40" };
+                    return (
+                      <motion.div
+                        key={e._id}
+                        layout
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="relative mb-2.5 flex gap-2.5 pl-0.5"
+                      >
+                        <span
+                          className={`z-10 mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#0a0f18] ${meta.color} [&>svg]:h-3 [&>svg]:w-3`}
+                        >
+                          {meta.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-[12px] font-medium text-white/75">{e.label}</p>
+                            <span className="mono ml-auto shrink-0 text-[9.5px] text-white/25">
+                              {timeAgo(e.createdAt)}
+                            </span>
+                          </div>
+                          {e.detail && (
+                            <p className="truncate text-[11px] text-white/35">{e.detail}</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            </section>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

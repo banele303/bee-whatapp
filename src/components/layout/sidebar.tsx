@@ -32,6 +32,12 @@ import {
   Workflow,
   Wrench,
   X,
+  Car,
+  Calculator,
+  Calendar,
+  RefreshCw,
+  BarChart3,
+  FileCheck,
   Zap,
 } from "lucide-react";
 import type { AccountRole } from "@/lib/auth/roles";
@@ -99,16 +105,17 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/inventory", labelKey: "Vehicle Stock", icon: Car },
+  { href: "/finance-application", labelKey: "SA Finance App", icon: FileCheck },
+  { href: "/finance-calculator", labelKey: "Finance Calculator", icon: Calculator },
+  { href: "/test-drives", labelKey: "Test Drives", icon: Calendar },
+  { href: "/trade-ins", labelKey: "Trade-In Appraisals", icon: RefreshCw },
+  { href: "/dealer-analytics", labelKey: "Dealer Analytics", icon: BarChart3 },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
-  { href: "/catalog", labelKey: "catalog", icon: Wrench },
-  { href: "/quotes", labelKey: "quotes", icon: FileText },
-  { href: "/notifications", labelKey: "notifications", icon: Bell },
   { href: "/contacts", labelKey: "contacts", icon: Users },
   { href: "/pipelines", labelKey: "pipelines", icon: GitBranch },
   { href: "/broadcasts", labelKey: "broadcasts", icon: Radio },
   { href: "/automations", labelKey: "whatsappAutomations", icon: Zap },
-  { href: "/agents", labelKey: "aiAgents", icon: Bot },
-  { href: "/flows", labelKey: "flows", icon: Workflow, beta: true },
 ];
 
 const aiNavItems: NavItem[] = [

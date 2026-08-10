@@ -119,7 +119,7 @@ export function JarvisApp() {
       <div className="relative z-10 flex h-full flex-col">
         <Header sessionAlive={sessionAlive} mirroring={mirroring} error={session.error} />
 
-        <div className="grid min-h-0 flex-1 grid-cols-[300px_1fr_320px] gap-4 px-4 pb-4 xl:grid-cols-[330px_1fr_360px] xl:gap-5 xl:px-5 xl:pb-5">
+        <div className="grid min-h-0 flex-1 grid-cols-[300px_1fr_auto] gap-4 px-4 pb-4 xl:grid-cols-[330px_1fr_auto] xl:gap-5 xl:px-5 xl:pb-5">
           <LeftPanel />
 
           <main className="glass flex min-h-0 flex-col items-center rounded-2xl px-6 pt-2">
@@ -137,7 +137,9 @@ export function JarvisApp() {
                 Session active in another window
               </p>
             )}
-            {session.active && <Transcript />}
+            {session.active && <Transcript onQuickAction={(cmd) => {
+              session.sendUserMessage(cmd);
+            }} />}
             
             {session.active && (
               <form onSubmit={handleSendChat} className="w-full mt-auto pb-4 pt-2 shrink-0">
