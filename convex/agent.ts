@@ -462,7 +462,7 @@ export const chat = action({
           try {
             const toolResult = await ctx.runAction(api.tools.execute, {
               name: tc.name,
-              args: argsParsed,
+              arguments: argsParsed,
             });
             return {
               role: "tool",
