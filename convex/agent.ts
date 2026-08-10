@@ -460,7 +460,7 @@ export const chat = action({
           }
 
           try {
-            const toolResult = await ctx.runAction(api.tools.runTool, {
+            const toolResult = await ctx.runAction(api.tools.execute, {
               name: tc.name,
               args: argsParsed,
             });
