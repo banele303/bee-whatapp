@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  Mic,
   Package,
   PanelLeftClose,
   PanelLeftOpen,
@@ -111,6 +112,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const aiNavItems: NavItem[] = [
+  { href: "/jarvis", labelKey: "jarvisAi", icon: Mic },
   { href: "/automations/workflows", labelKey: "sourcingBuilder", icon: GitBranch, beta: true },
   { href: "/automations/copilot", labelKey: "sourcingCopilot", icon: Sparkles },
 ];

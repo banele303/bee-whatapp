@@ -33,6 +33,7 @@
   "exclude": [
     "node_modules",
     "browser-automation-app-main",
-    "AI-Receptionist-Live-YouTube-Demo-main"
+    "AI-Receptionist-Live-YouTube-Demo-main",
+    "Jarvis-main"
   ]
 }

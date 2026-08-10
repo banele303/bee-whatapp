@@ -46,3 +46,8 @@ yarn-error.log*
 next-env.d.ts
 
 fb-token.txt
+
+# backup / demo directories
+Jarvis-main/
+browser-automation-app-main/
+AI-Receptionist-Live-YouTube-Demo-main/
