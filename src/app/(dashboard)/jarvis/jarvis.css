@@ -1,7 +1,7 @@
 .jarvis-scope {
-  --bg: #04060c;
-  --accent: #45d8ff;
-  --accent-dim: rgba(69, 216, 255, 0.35);
+  --bg: var(--background);
+  --accent: var(--primary);
+  --accent-dim: var(--primary-soft);
 
   /* Orb / system state hues (updated at runtime) */
   --state-hue: 195;

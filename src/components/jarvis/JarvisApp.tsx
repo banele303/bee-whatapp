@@ -140,12 +140,12 @@ export function JarvisApp() {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Type a command (e.g., 'Check my unread emails')..."
-                    className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] pl-4 pr-16 py-2 text-[12px] text-white/80 outline-none transition focus:border-cyan-300/40 focus:bg-cyan-400/[0.04]"
+                    className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] pl-4 pr-16 py-2 text-[12px] text-white/80 outline-none transition focus:border-primary/40 focus:bg-primary/[0.04]"
                   />
                   <button
                     type="submit"
                     disabled={!chatInput.trim()}
-                    className="absolute right-2 px-2.5 py-1 rounded bg-cyan-400/10 text-cyan-300 text-[10px] tracking-[0.1em] border border-cyan-400/20 hover:bg-cyan-400/20 transition disabled:opacity-30 disabled:hover:bg-cyan-400/10"
+                    className="absolute right-2 px-2.5 py-1 rounded bg-primary/10 text-primary text-[10px] tracking-[0.1em] border border-primary/20 hover:bg-primary/20 transition disabled:opacity-30 disabled:hover:bg-primary/10"
                   >
                     SEND
                   </button>
@@ -158,7 +158,7 @@ export function JarvisApp() {
                 <button
                   onClick={() => void session.activate()}
                   disabled={session.connecting}
-                  className="mono mx-auto rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-4 py-2 text-[11px] tracking-[0.2em] text-cyan-200 uppercase transition hover:bg-cyan-400/20 hover:shadow-[0_0_30px_rgba(69,216,255,0.15)] disabled:opacity-50"
+                  className="mono mx-auto rounded-lg border border-primary/25 bg-primary/10 px-4 py-2 text-[11px] tracking-[0.2em] text-primary uppercase transition hover:bg-primary/20 hover:shadow-[0_0_30px_var(--state-glow)] disabled:opacity-50"
                 >
                   {session.connecting ? "Connecting..." : "Connect Jarvis to type commands"}
                 </button>
@@ -219,7 +219,7 @@ function Header({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span className="text-[10px] font-semibold text-cyan-200/70">
+                <span className="text-[10px] font-semibold text-primary/70">
                   {(profile?.displayName ?? user?.email ?? "O")[0]?.toUpperCase()}
                 </span>
               )}
@@ -230,7 +230,7 @@ function Header({
           </span>
           <Link
             href="/jarvis/profile"
-            className="mono rounded border border-cyan-300/20 bg-cyan-400/[0.06] px-2 py-1 text-[9.5px] tracking-[0.2em] text-cyan-200/70 uppercase transition hover:border-cyan-300/45 hover:bg-cyan-400/15 hover:text-cyan-100"
+            className="mono rounded border border-primary/20 bg-primary/[0.06] px-2 py-1 text-[9.5px] tracking-[0.2em] text-primary/70 uppercase transition hover:border-primary/45 hover:bg-primary/15 hover:text-white"
           >
             Edit profile
           </Link>

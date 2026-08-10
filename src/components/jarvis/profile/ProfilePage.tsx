@@ -112,7 +112,7 @@ export function ProfilePage() {
         </div>
         <Link
           href="/jarvis"
-          className="mono flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] tracking-[0.2em] text-white/40 uppercase transition hover:border-cyan-300/40 hover:text-cyan-200"
+          className="mono flex items-center gap-1.5 rounded border border-white/10 px-2.5 py-1.5 text-[10px] tracking-[0.2em] text-white/40 uppercase transition hover:border-primary/40 hover:text-primary"
         >
           <ArrowLeft className="h-3 w-3" />
           Control Center
@@ -132,7 +132,7 @@ export function ProfilePage() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-white/15 bg-white/[0.04] transition hover:border-cyan-300/50"
+                className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-white/15 bg-white/[0.04] transition hover:border-primary/50"
                 title="Upload profile picture"
               >
                 {profile?.avatarUrl ? (
@@ -143,7 +143,7 @@ export function ProfilePage() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-cyan-200/70">
+                  <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-primary/70">
                     {initial}
                   </span>
                 )}
@@ -214,7 +214,7 @@ export function ProfilePage() {
                   <select
                     value={form.communicationStyle}
                     onChange={(e) => set("communicationStyle")(e.target.value)}
-                    className="mono w-full appearance-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition focus:border-cyan-300/40 [&>option]:bg-[#0a0f18]"
+                    className="mono w-full appearance-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition focus:border-primary/40 [&>option]:bg-[#0a0f18]"
                   >
                     <option value="concise">Concise — short and direct</option>
                     <option value="balanced">Balanced — natural detail</option>
@@ -239,7 +239,7 @@ export function ProfilePage() {
                   onChange={(e) => set("notes")(e.target.value)}
                   rows={4}
                   placeholder="Current projects, people I work with, preferences, things to keep in mind…"
-                  className="mono w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] leading-relaxed text-white/85 outline-none transition focus:border-cyan-300/40"
+                  className="mono w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] leading-relaxed text-white/85 outline-none transition focus:border-primary/40"
                 />
               </div>
 
@@ -247,7 +247,7 @@ export function ProfilePage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="mono rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-6 py-2.5 text-[12px] tracking-[0.25em] text-cyan-100 uppercase transition hover:bg-cyan-400/20 disabled:opacity-50"
+                  className="mono rounded-lg border border-primary/25 bg-primary/10 px-6 py-2.5 text-[12px] tracking-[0.25em] text-primary uppercase transition hover:bg-primary/20 disabled:opacity-50"
                 >
                   {saving ? <span className="shimmer-text">Saving…</span> : "Save profile"}
                 </button>
@@ -292,7 +292,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition placeholder:text-white/20 focus:border-cyan-300/40 focus:bg-cyan-400/[0.04]"
+        className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition placeholder:text-white/20 focus:border-primary/40 focus:bg-primary/[0.04]"
       />
     </div>
   );

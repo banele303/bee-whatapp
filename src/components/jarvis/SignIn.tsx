@@ -61,7 +61,7 @@ export function SignIn() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition focus:border-cyan-300/40 focus:bg-cyan-400/[0.04]"
+              className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition focus:border-primary/40 focus:bg-primary/[0.04]"
               placeholder="operator@stark.io"
             />
           </div>
@@ -74,7 +74,7 @@ export function SignIn() {
               autoComplete={flow === "signIn" ? "current-password" : "new-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition focus:border-cyan-300/40 focus:bg-cyan-400/[0.04]"
+              className="mono w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[13px] text-white/85 outline-none transition focus:border-primary/40 focus:bg-primary/[0.04]"
               placeholder="••••••••"
             />
           </div>
@@ -84,7 +84,7 @@ export function SignIn() {
           <button
             type="submit"
             disabled={busy}
-            className="mono w-full rounded-lg border border-cyan-300/25 bg-cyan-400/10 py-2.5 text-[12px] tracking-[0.25em] text-cyan-100 uppercase transition hover:bg-cyan-400/20 hover:shadow-[0_0_30px_rgba(69,216,255,0.15)] disabled:opacity-50"
+            className="mono w-full rounded-lg border border-primary/25 bg-primary/10 py-2.5 text-[12px] tracking-[0.25em] text-primary uppercase transition hover:bg-primary/20 hover:shadow-[0_0_30px_var(--state-glow)] disabled:opacity-50"
           >
             {busy ? (
               <span className="shimmer-text">Authenticating…</span>
@@ -101,7 +101,7 @@ export function SignIn() {
             setFlow(flow === "signIn" ? "signUp" : "signIn");
             setError(null);
           }}
-          className="mt-5 w-full text-center text-[11.5px] text-white/35 transition hover:text-cyan-200/70"
+          className="mt-5 w-full text-center text-[11.5px] text-white/35 transition hover:text-primary/70"
         >
           {flow === "signIn" ? "New operator? Create access" : "Have credentials? Sign in"}
         </button>
