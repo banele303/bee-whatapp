@@ -207,10 +207,6 @@ function Header({
   return (
     <header className="flex items-center justify-between px-6 py-4 xl:px-7">
       <div className="flex items-baseline gap-3">
-        <h1 className="text-[15px] font-semibold tracking-[0.42em] text-white/90">
-          J A R V I S
-        </h1>
-        <span className="label-xs">Control Center</span>
       </div>
       <div className="flex items-center gap-4">
         {error && (

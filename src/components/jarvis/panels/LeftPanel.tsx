@@ -76,7 +76,7 @@ export function LeftPanel() {
                   : "text-white/75"
             }`}
           >
-            {objective?.text ?? "Standing by"}
+            {objective?.text ?? "Ready"}
           </motion.p>
         </AnimatePresence>
       </section>

@@ -111,6 +111,7 @@ const mainNavItems: NavItem[] = [
   { href: "/pipelines", labelKey: "pipelines", icon: GitBranch },
   { href: "/broadcasts", labelKey: "broadcasts", icon: Radio },
   { href: "/automations", labelKey: "whatsappAutomations", icon: Zap },
+  { href: "/agents", labelKey: "aiAgents", icon: Bot },
 ];
 
 const aiNavItems: NavItem[] = [

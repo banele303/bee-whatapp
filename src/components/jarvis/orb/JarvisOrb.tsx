@@ -59,7 +59,7 @@ export function JarvisOrb({
     <div className="relative flex flex-col items-center">
       <div className={`relative transition-all duration-500 ease-in-out ${
         active 
-          ? "h-[100px] w-[130px] md:h-[110px] md:w-[150px] xl:h-[130px] xl:w-[170px]" 
+          ? "h-[180px] w-[220px] md:h-[220px] md:w-[280px] xl:h-[260px] xl:w-[320px]" 
           : "h-[280px] w-[340px] md:h-[320px] md:w-[400px] xl:h-[360px] xl:w-[450px]"
       }`}>
         <canvas ref={canvasRef} className="h-full w-full" />
@@ -114,14 +114,6 @@ export function JarvisOrb({
             <span className="mono text-[11px] tracking-[0.3em] uppercase text-white/50">
               {active ? ORB_STATE_LABELS[state] : "Offline"}
             </span>
-            {active && hosting && onDeactivate && (
-              <button
-                onClick={onDeactivate}
-                className="mono ml-2 rounded border border-white/10 px-1.5 py-0.5 text-[9px] tracking-[0.2em] text-white/30 uppercase transition hover:border-red-300/40 hover:text-red-300/80"
-              >
-                Stand down
-              </button>
-            )}
           </motion.div>
         </AnimatePresence>
       </div>
