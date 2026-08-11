@@ -202,6 +202,91 @@ export const execute = action({
           });
         }
 
+        /* ---------------- dealership ---------------- */
+        case "list_inventory": {
+          await setObjective("Checking vehicle stock");
+          const items = await ctx.runQuery(api.inventory.list, {
+            status: args.status,
+          });
+          const queryStr = String(args.query ?? "").toLowerCase();
+          const filtered = queryStr
+            ? items.filter((i) => `${i.year} ${i.make} ${i.model}`.toLowerCase().includes(queryStr))
+            : items;
+          const shaped = filtered.map((i) => ({
+            id: i._id,
+            vehicle: `${i.year} ${i.make} ${i.model}`,
+            price: `R ${i.price.toLocaleString()}`,
+            mileage: `${i.mileage?.toLocaleString() ?? 0} km`,
+            status: i.status,
+            fuelType: i.fuelType ?? "Petrol",
+            transmission: i.transmission ?? "Auto",
+          }));
+          await log("results", "Vehicle stock retrieved", `${shaped.length} cars found`);
+          return finish({ count: shaped.length, vehicles: shaped });
+        }
+
+        case "add_vehicle": {
+          await setObjective("Adding vehicle to inventory");
+          const res = await ctx.runMutation(api.inventory.add, {
+            make: String(args.make ?? ""),
+            model: String(args.model ?? ""),
+            year: Number(args.year ?? new Date().getFullYear()),
+            price: Number(args.price ?? 0),
+            mileage: Number(args.mileage ?? 0),
+            colour: args.colour ? String(args.colour) : "White",
+            fuelType: args.fuelType ? String(args.fuelType) : "Petrol",
+            transmission: args.transmission ? String(args.transmission) : "Automatic",
+            bodyType: args.bodyType ? String(args.bodyType) : "SUV",
+            status: "available",
+          });
+          await log("completed", "Vehicle added", `${args.year} ${args.make} ${args.model}`);
+          return finish({ ok: true, id: res, vehicle: `${args.year} ${args.make} ${args.model}` });
+        }
+
+        case "list_finance_applications": {
+          await setObjective("Reviewing finance applications");
+          const apps = await ctx.runQuery(api.financeApplications.list, {
+            status: args.status,
+          });
+          const shaped = apps.map((a) => ({
+            id: a._id,
+            applicant: `${a.firstName} ${a.lastName}`,
+            vehicle: a.vehicleOfInterest ?? "Unspecified",
+            status: a.status,
+            monthlyIncome: `R ${a.netMonthlyIncome?.toLocaleString() ?? 0}`,
+            submittedAt: a.submittedAt ? new Date(a.submittedAt).toLocaleDateString() : undefined,
+          }));
+          await log("results", "Finance apps retrieved", `${shaped.length} applications found`);
+          return finish({ count: shaped.length, applications: shaped });
+        }
+
+        case "list_test_drives": {
+          await setObjective("Reviewing test drive bookings");
+          const drives = await ctx.runQuery(api.testDrives.list, {});
+          const shaped = drives.map((d) => ({
+            id: d._id,
+            customer: `${d.customerName} (${d.customerPhone})`,
+            vehicle: d.vehicleLabel,
+            status: d.status,
+            scheduledAt: new Date(d.scheduledAt).toLocaleString(),
+          }));
+          return finish({ count: shaped.length, testDrives: shaped });
+        }
+
+        case "list_trade_ins": {
+          await setObjective("Reviewing trade-in appraisals");
+          const tradeIns = await ctx.runQuery(api.tradeIns.list, {});
+          const shaped = tradeIns.map((t) => ({
+            id: t._id,
+            customer: `${t.customerName} (${t.customerPhone})`,
+            vehicle: `${t.year} ${t.make} ${t.model}`,
+            condition: t.condition,
+            estimatedValue: `R ${t.estimatedValue?.toLocaleString() ?? 0}`,
+            status: t.status,
+          }));
+          return finish({ count: shaped.length, tradeIns: shaped });
+        }
+
         /* ---------------- services ---------------- */
         case "list_services": {
           const connections = await ctx.runQuery(api.connections.list, {});

@@ -18,10 +18,66 @@ Operational rules:
 - "Prepare me for today" or any daily-briefing request → call "prepare_daily_briefing", then deliver a confident executive summary of its results.
 - If asked what you know about the user, call "recall" and summarize warmly.
 - To-dos live natively in this platform (not Notion). Manage them with "add_todo", "complete_todo", "update_todo", "delete_todo", and "list_todos". Be proactive: if an email or meeting clearly implies an action item, offer to add it as a to-do. When the user references a to-do loosely, call "list_todos" first to find the right title.
+- Dealership Stock & Finance live NATIVELY in this platform. You have direct access to list and search vehicle stock with "list_inventory", add new vehicles with "add_vehicle", review vehicle finance applications with "list_finance_applications", view test drive bookings with "list_test_drives", and check trade-in appraisals with "list_trade_ins". Never claim you cannot check stock or inventory!
 - Sending email: draft the message yourself from the user's intent, then read back the recipient, subject, and a one-line gist and ask for confirmation BEFORE calling "send_email". Never send without explicit confirmation. If the user dictates a recipient address, repeat it back character-perfect. After sending, confirm briefly.
 - Report failures honestly and suggest the next step. Never invent data.`;
 
 const JARVIS_TOOLS = [
+  {
+    type: "function",
+    name: "list_inventory",
+    description: "List and search the dealership's native vehicle stock inventory (make, model, year, price in ZAR, mileage, status).",
+    parameters: {
+      type: "object",
+      properties: {
+        status: { type: "string", description: "Filter by status: 'available', 'reserved', 'sold'." },
+        query: { type: "string", description: "Search term for make, model, or year." },
+      },
+    },
+  },
+  {
+    type: "function",
+    name: "add_vehicle",
+    description: "Add a new vehicle to the dealership stock inventory.",
+    parameters: {
+      type: "object",
+      properties: {
+        make: { type: "string", description: "Vehicle make, e.g. Toyota" },
+        model: { type: "string", description: "Vehicle model, e.g. Hilux 2.8GD-6" },
+        year: { type: "number" },
+        price: { type: "number", description: "Asking price in ZAR" },
+        mileage: { type: "number" },
+        colour: { type: "string" },
+        fuelType: { type: "string" },
+        transmission: { type: "string" },
+        bodyType: { type: "string" },
+      },
+      required: ["make", "model", "price"],
+    },
+  },
+  {
+    type: "function",
+    name: "list_finance_applications",
+    description: "List and check South African vehicle finance applications (NCA affordability, applicant name, status).",
+    parameters: {
+      type: "object",
+      properties: {
+        status: { type: "string", description: "Filter status: 'submitted', 'under_review', 'approved', 'declined'." },
+      },
+    },
+  },
+  {
+    type: "function",
+    name: "list_test_drives",
+    description: "List customer test drive booking appointments.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    type: "function",
+    name: "list_trade_ins",
+    description: "List vehicle trade-in appraisals and customer offer requests.",
+    parameters: { type: "object", properties: {} },
+  },
   {
     type: "function",
     name: "get_emails",
