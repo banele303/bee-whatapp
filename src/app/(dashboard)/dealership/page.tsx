@@ -10,17 +10,16 @@ import {
   RefreshCw,
   BarChart3,
   Building2,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Import view components
-import InventoryView from "../inventory/page";
-import FinanceAppView from "../finance-application/page";
-import FinanceCalcView from "../finance-calculator/page";
-import TestDrivesView from "../test-drives/page";
-import TradeInsView from "../trade-ins/page";
-import DealerAnalyticsView from "../dealer-analytics/page";
+// Import view components from components directory
+import { InventoryView } from "@/components/dealership/InventoryView";
+import { FinanceAppView } from "@/components/dealership/FinanceAppView";
+import { FinanceCalcView } from "@/components/dealership/FinanceCalcView";
+import { TestDrivesView } from "@/components/dealership/TestDrivesView";
+import { TradeInsView } from "@/components/dealership/TradeInsView";
+import { DealerAnalyticsView } from "@/components/dealership/DealerAnalyticsView";
 
 const TABS = [
   { id: "analytics", label: "Overview & Analytics", icon: BarChart3 },
