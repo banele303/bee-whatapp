@@ -105,12 +105,7 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
-  { href: "/inventory", labelKey: "vehicleStock", icon: Car },
-  { href: "/finance-application", labelKey: "saFinanceApp", icon: FileCheck },
-  { href: "/finance-calculator", labelKey: "financeCalculator", icon: Calculator },
-  { href: "/test-drives", labelKey: "testDrives", icon: Calendar },
-  { href: "/trade-ins", labelKey: "tradeInAppraisals", icon: RefreshCw },
-  { href: "/dealer-analytics", labelKey: "dealerAnalytics", icon: BarChart3 },
+  { href: "/dealership", labelKey: "carDealership", icon: Car },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
   { href: "/contacts", labelKey: "contacts", icon: Users },
   { href: "/pipelines", labelKey: "pipelines", icon: GitBranch },
