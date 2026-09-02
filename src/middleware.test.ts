@@ -53,32 +53,55 @@ const ROTATED = {
   options: { path: "/", httpOnly: true },
 };
 
+const AUTH_HEADER = { cookie: "sb-test-auth-token=existing-token" };
+
+describe("middleware — fast-path without Supabase cookies", () => {
+  it("redirects unauthenticated user on protected route to /login immediately", async () => {
+    const res = await middleware(
+      new NextRequest("https://app.test/dashboard")
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+
+  it("passes through for public page when no cookies are present", async () => {
+    const res = await middleware(
+      new NextRequest("https://app.test/login")
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("returns 401 for protected API routes when no cookies are present", async () => {
+    const res = await middleware(
+      new NextRequest("https://app.test/api/whatsapp/chats")
+    );
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("middleware — refreshed auth cookies survive redirects", () => {
   it("carries the rotated token when redirecting a signed-in user off /login", async () => {
     mockUser = { id: "user-1" };
     refreshedCookies = [ROTATED];
 
     const res = await middleware(
-      new NextRequest("https://app.test/login"),
+      new NextRequest("https://app.test/login", { headers: AUTH_HEADER })
     );
 
-    // Redirect to /dashboard…
+    // Redirect to /onboarding…
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toContain("/dashboard");
-    // …and the rotated cookie MUST ride along, otherwise the browser keeps
-    // replaying the now-consumed refresh token and the session wedges until
-    // the user manually clears cookies.
+    expect(res.headers.get("location")).toContain("/onboarding");
+    // …and the rotated cookie MUST ride along
     expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
   });
 
   it("carries the rotated token when redirecting an unauth user to /login", async () => {
     mockUser = null;
-    // Even on the logged-out path getUser() may emit cookie writes (e.g.
-    // clearing a dead session); those must not be dropped on the redirect.
     refreshedCookies = [{ ...ROTATED, value: "cleared" }];
 
     const res = await middleware(
-      new NextRequest("https://app.test/dashboard"),
+      new NextRequest("https://app.test/dashboard", { headers: AUTH_HEADER })
     );
 
     expect(res.status).toBe(307);
@@ -91,7 +114,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     refreshedCookies = [ROTATED];
 
     const res = await middleware(
-      new NextRequest("https://app.test/login?invite=abc123"),
+      new NextRequest("https://app.test/login?invite=abc123", { headers: AUTH_HEADER })
     );
 
     expect(res.headers.get("location")).toContain("/join/abc123");
@@ -103,7 +126,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     refreshedCookies = [ROTATED];
 
     const res = await middleware(
-      new NextRequest("https://app.test/dashboard"),
+      new NextRequest("https://app.test/dashboard", { headers: AUTH_HEADER })
     );
 
     // No redirect — the normal NextResponse.next() already carries cookies.
