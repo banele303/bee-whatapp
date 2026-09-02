@@ -49,29 +49,36 @@ function LoginPageInner() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        const msg = error.message.includes("Failed to fetch")
+          ? "Unable to reach Supabase. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in Vercel and your Supabase project is active."
+          : error.message;
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+
+      // Full-page navigation (not router.push) so the browser issues a
+      // fresh top-level request that carries the just-written Supabase
+      // auth cookies to the middleware gating /dashboard.
+      const destination = inviteToken
+        ? `/join/${encodeURIComponent(inviteToken)}`
+        : "/dashboard";
+      window.location.href = destination;
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      const msg = errMessage.includes("Failed to fetch")
+        ? "Unable to reach Supabase. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in Vercel and your Supabase project is active."
+        : errMessage;
+      setError(msg);
       setLoading(false);
-      return;
     }
-
-    // Full-page navigation (not router.push) so the browser issues a
-    // fresh top-level request that carries the just-written Supabase
-    // auth cookies to the middleware gating /dashboard. A soft
-    // client-side navigation can reach the protected route before the
-    // server observes the new session, so the middleware bounces it
-    // back to /login — which looks like the page "just refreshing"
-    // instead of signing in (issue #365). Mirrors the deliberate full
-    // reload the invite-accept flow already uses in join/[token].
-    const destination = inviteToken
-      ? `/join/${encodeURIComponent(inviteToken)}`
-      : "/dashboard";
-    window.location.href = destination;
   };
 
   return (

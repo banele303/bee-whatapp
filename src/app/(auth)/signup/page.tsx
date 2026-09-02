@@ -60,33 +60,41 @@ function SignupPageInner() {
 
     setLoading(true);
 
-    // If we have an invite token, point Supabase's verification
-    // email back at the join page so the user can accept after
-    // verifying. Without a token, Supabase uses its default
-    // redirect (the app root).
-    const emailRedirectTo = inviteToken
-      ? `${window.location.origin}/join/${encodeURIComponent(inviteToken)}`
-      : undefined;
+    try {
+      const emailRedirectTo = inviteToken
+        ? `${window.location.origin}/join/${encodeURIComponent(inviteToken)}`
+        : undefined;
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
         },
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
-      },
-    });
+      });
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        const msg = error.message.includes("Failed to fetch")
+          ? "Unable to reach Supabase. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in Vercel and your Supabase project is active."
+          : error.message;
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
       setLoading(false);
-      return;
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      const msg = errMessage.includes("Failed to fetch")
+        ? "Unable to reach Supabase. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in Vercel and your Supabase project is active."
+        : errMessage;
+      setError(msg);
+      setLoading(false);
     }
-
-    setSuccess(true);
-    setLoading(false);
   };
 
   if (success) {
