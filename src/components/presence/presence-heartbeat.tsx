@@ -20,22 +20,26 @@ import { HEARTBEAT_MS, IDLE_AFTER_MS, type StoredPresence } from "@/lib/presence
  * 'offline' from staleness — no unreliable unload write needed.
  */
 export function PresenceHeartbeat() {
-  const { accountId } = useAuth();
+  const { accountId, user } = useAuth();
 
   // 0 = "never recorded"; set on mount so we don't read the clock during
   // render (impure). Until the effect runs the tab counts as active.
   const lastActivityRef = useRef<number>(0);
 
   useEffect(() => {
-    // Hold off until the account is known. Beating during the brief
-    // window on a fresh signup — authed but profile/account row not yet
-    // created — would make touch_presence raise "No account for caller"
-    // and log a spurious error. The effect re-runs once accountId lands.
-    if (!accountId) return;
+    // Skip if in dev bypass mode, dev dummy user, or missing account.
+    const isDev =
+      typeof document !== "undefined" &&
+      (document.cookie.includes("wacrm-dev-bypass=true") ||
+        user?.id === "00000000-0000-0000-0000-000000000001" ||
+        accountId === "00000000-0000-0000-0000-000000000001");
+
+    if (isDev || !accountId) return;
 
     const supabase = createClient();
     let cancelled = false;
     let lastBeatAt = 0;
+    let consecutiveFailures = 0;
     lastActivityRef.current = Date.now();
 
     const markActive = () => {
@@ -49,20 +53,24 @@ export function PresenceHeartbeat() {
     };
 
     const beat = async () => {
-      if (cancelled) return;
+      if (cancelled || consecutiveFailures >= 2) return;
       // Coalesce bursts: a tab refocus fires visibilitychange AND focus
       // together, so skip a beat within 1s of the last to avoid two RPCs
       // in the same frame. The 30s interval is never affected.
       const t = Date.now();
       if (t - lastBeatAt < 1_000) return;
       lastBeatAt = t;
-      const { error } = await supabase.rpc("touch_presence", {
-        p_status: currentStatus(),
-      });
-      if (error && !cancelled) {
-        // Non-fatal: presence is best-effort. Log once per failure so a
-        // misconfigured RPC is visible without spamming.
-        console.error("[PresenceHeartbeat] touch_presence failed:", error.message);
+      try {
+        const { error } = await supabase.rpc("touch_presence", {
+          p_status: currentStatus(),
+        });
+        if (error) {
+          consecutiveFailures++;
+        } else {
+          consecutiveFailures = 0;
+        }
+      } catch {
+        consecutiveFailures++;
       }
     };
 

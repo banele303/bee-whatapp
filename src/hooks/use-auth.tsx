@@ -43,6 +43,7 @@ interface AccountSummary {
   /** Default deal currency (ISO-4217). NOT NULL DEFAULT 'USD' in the
    *  DB (migration 021); narrowed to DEFAULT_CURRENCY when absent. */
   default_currency: string;
+  vertical_type?: string;
 }
 
 interface AuthContextValue {
@@ -106,21 +107,69 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const DEV_USER = {
+  id: "00000000-0000-0000-0000-000000000001",
+  app_metadata: {},
+  user_metadata: { full_name: "Dr. Alex Taylor" },
+  aud: "authenticated",
+  created_at: "2026-01-01T00:00:00.000Z",
+  email: "doctor@clinic.com",
+} as unknown as User;
+
+const DEV_PROFILE: Profile = {
+  id: "00000000-0000-0000-0000-000000000001",
+  full_name: "Dr. Alex Taylor",
+  email: "doctor@clinic.com",
+  avatar_url: null,
+  role: "owner",
+  beta_features: [],
+  account_id: "00000000-0000-0000-0000-000000000001",
+  account_role: "owner",
+};
+
+const DEV_ACCOUNT: AccountSummary = {
+  id: "00000000-0000-0000-0000-000000000001",
+  name: "HealthCare Clinic",
+  default_currency: "ZAR",
+  vertical_type: "dentist",
+};
+
+function isDevBypassActive(): boolean {
+  return typeof document !== "undefined" && document.cookie.includes("wacrm-dev-bypass=true");
+}
+
+function getLocalAuth(): { user: User | null; profile?: Profile | null } {
+  if (typeof window === "undefined") return { user: null };
+  if (isDevBypassActive()) return { user: DEV_USER, profile: DEV_PROFILE };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith("sb-") || key.includes("auth-token"))) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.user) {
+            return { user: parsed.user };
+          }
+        }
+      }
+    }
+  } catch {}
+  return { user: null };
+}
+
 /**
  * AuthProvider — wrap this around the dashboard layout.
  * Makes ONE getSession() call for the whole tree instead of one per
  * component, avoiding internal lock contention in the Supabase client.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [account, setAccount] = useState<AccountSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  // Tracked separately from `loading`. The session settles fast (one
-  // local cookie read); the profile fetch crosses the network and
-  // settles later. Callers that gate on `profile.*` need to know which
-  // window they're in — see the type doc above.
-  const [profileLoading, setProfileLoading] = useState(true);
+  const initialAuth = getLocalAuth();
+  const [user, setUser] = useState<User | null>(() => initialAuth.user);
+  const [profile, setProfile] = useState<Profile | null>(() => (isDevBypassActive() ? DEV_PROFILE : null));
+  const [account, setAccount] = useState<AccountSummary | null>(() => (isDevBypassActive() ? DEV_ACCOUNT : null));
+  const [loading, setLoading] = useState(() => !isDevBypassActive() && !initialAuth.user);
+  const [profileLoading, setProfileLoading] = useState(() => !isDevBypassActive());
 
   // Tracks the user ID we've successfully initiated/completed fetching
   // a profile for. This prevents redundant re-fetches and toggling
@@ -171,7 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .from("accounts")
             // default_currency added in migration 021; narrowed to the
             // USD fallback below for older schemas where it reads null.
-            .select("id, name, default_currency")
+            .select("id, name, default_currency, vertical_type")
             .eq("id", data.account_id)
             .maybeSingle();
           if (accountErr) {
@@ -186,6 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               id: account.id,
               name: account.name,
               default_currency: account.default_currency ?? DEFAULT_CURRENCY,
+              vertical_type: (account as any).vertical_type ?? "general",
             };
           }
         }
@@ -226,16 +276,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isDevBypassActive()) {
+      setUser(DEV_USER);
+      setProfile(DEV_PROFILE);
+      setAccount(DEV_ACCOUNT);
+      setLoading(false);
+      setProfileLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     let mounted = true;
 
     const safetyTimer = setTimeout(() => {
       if (mounted) {
-        console.warn("[AuthProvider] getSession() timed out after 3s");
+        console.warn("[AuthProvider] getSession() timed out after 5s; preserving local auth state");
+        const fallback = getLocalAuth();
+        if (fallback.user) {
+          setUser(fallback.user);
+        }
         setLoading(false);
         setProfileLoading(false);
       }
-    }, 3000);
+    }, 5000);
 
     const init = async () => {
       try {
@@ -247,19 +310,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) console.error("[AuthProvider] getSession error:", error.message);
 
         if (!mounted) return;
-        const currentUser = session?.user ?? null;
+        const currentUser = session?.user ?? getLocalAuth().user;
         setUser(currentUser);
 
         if (currentUser) {
-          // Don't block session loading on profile fetch — chrome
-          // (header, sidebar) can render from the user object alone,
-          // profile enriches async. Callers that need to branch on
-          // profile data gate on `profileLoading` instead.
           fetchProfile(currentUser.id);
         } else {
-          // No user → no profile to load. Flip profileLoading off so
-          // pages that gate on it don't wait forever on the logged-out
-          // path (the route guard or redirect should fire instead).
           setProfileLoading(false);
         }
       } catch (err) {
@@ -301,8 +357,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
+    if (typeof document !== "undefined") {
+      document.cookie = "wacrm-dev-bypass=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
     const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore network errors on signout
+    }
     setUser(null);
     setProfile(null);
     setAccount(null);

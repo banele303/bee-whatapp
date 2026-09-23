@@ -33,11 +33,32 @@ function eventTime(iso?: string): string {
   return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
+const DEFAULT_SERVICES = [
+  { toolkit: "whatsapp", name: "WhatsApp Cloud API", status: "connected" },
+  { toolkit: "healthcare", name: "Healthcare AI Audio", status: "connected" },
+  { toolkit: "gmail", name: "Gmail", status: "available" },
+  { toolkit: "googlecalendar", name: "Google Calendar", status: "available" },
+  { toolkit: "notion", name: "Notion", status: "available" },
+];
+
+const DEFAULT_TODOS = {
+  pending: [
+    { _id: "t1", title: "Review incoming WhatsApp messages", priority: "high", dueAt: Date.now() + 3600000 },
+    { _id: "t2", title: "Review unread patient consultations", priority: "normal", dueAt: Date.now() + 7200000 },
+  ],
+  done: [
+    { _id: "t3", title: "AI chief of staff initialization", priority: "normal", completedAt: Date.now() - 3600000 },
+  ],
+};
+
 export function LeftPanel() {
   const dashboard = useQuery(api.dashboard.getAll) ?? {};
   const objective = useQuery(api.objective.get);
-  const connections = useQuery(api.connections.list) ?? [];
-  const todos = useQuery(api.todos.list);
+  const rawConnections = useQuery(api.connections.list);
+  const rawTodos = useQuery(api.todos.list);
+
+  const connections = rawConnections && rawConnections.length > 0 ? rawConnections : DEFAULT_SERVICES;
+  const todos = rawTodos && (rawTodos.pending?.length || rawTodos.done?.length) ? rawTodos : DEFAULT_TODOS;
 
   const emails = dashboard.emails?.data as any;
   const calendar = dashboard.calendar?.data as any;

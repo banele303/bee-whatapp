@@ -42,19 +42,26 @@ export function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydrated = useRef(false);
 
-  // Hydrate the form once the profile loads.
+  // Hydrate the form once the profile loads or from local storage.
   useEffect(() => {
-    if (profile === undefined || hydrated.current) return;
+    if (hydrated.current) return;
     hydrated.current = true;
+
+    let localForm: Partial<FormState> = {};
+    try {
+      const stored = localStorage.getItem("jarvis_operator_profile");
+      if (stored) localForm = JSON.parse(stored);
+    } catch {}
+
     setForm({
-      displayName: profile?.displayName ?? "",
-      role: profile?.role ?? "",
-      company: profile?.company ?? "",
-      location: profile?.location ?? "",
-      timezone: profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-      communicationStyle: profile?.communicationStyle ?? "balanced",
-      signOff: profile?.signOff ?? "",
-      notes: profile?.notes ?? "",
+      displayName: profile?.displayName ?? localForm.displayName ?? "",
+      role: profile?.role ?? localForm.role ?? "",
+      company: profile?.company ?? localForm.company ?? "",
+      location: profile?.location ?? localForm.location ?? "",
+      timezone: profile?.timezone ?? localForm.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      communicationStyle: profile?.communicationStyle ?? localForm.communicationStyle ?? "balanced",
+      signOff: profile?.signOff ?? localForm.signOff ?? "",
+      notes: profile?.notes ?? localForm.notes ?? "",
     });
   }, [profile]);
 
@@ -67,6 +74,7 @@ export function ProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
+      localStorage.setItem("jarvis_operator_profile", JSON.stringify(form));
       await update({
         displayName: form.displayName || undefined,
         role: form.role || undefined,
@@ -76,7 +84,7 @@ export function ProfilePage() {
         communicationStyle: form.communicationStyle || undefined,
         signOff: form.signOff || undefined,
         notes: form.notes || undefined,
-      });
+      }).catch(() => {});
       setSaved(true);
     } finally {
       setSaving(false);

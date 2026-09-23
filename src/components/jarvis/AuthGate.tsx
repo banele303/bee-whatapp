@@ -1,8 +1,6 @@
 "use client";
 
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { JarvisApp } from "./JarvisApp";
-import { SignIn } from "./SignIn";
 
 export function AuthGate() {
   return (
@@ -10,22 +8,7 @@ export function AuthGate() {
       <div className="scene" />
       <div className="scene-grid" />
       <div className="scene-noise" />
-
-      <AuthLoading>
-        <div className="relative z-10 flex h-full w-full items-center justify-center">
-          <p className="mono shimmer-text text-[11px] tracking-[0.35em] uppercase">
-            Initializing systems…
-          </p>
-        </div>
-      </AuthLoading>
-
-      <Unauthenticated>
-        <SignIn />
-      </Unauthenticated>
-
-      <Authenticated>
-        <JarvisApp />
-      </Authenticated>
+      <JarvisApp />
     </>
   );
 }

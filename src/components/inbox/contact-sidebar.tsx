@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ import {
   DollarSign,
   StickyNote,
   Plus,
+  Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -153,6 +155,15 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
             {contact.company && (
               <p className="text-xs text-muted-foreground">{contact.company}</p>
             )}
+
+            {/* Healthcare: Start Consultation */}
+            <Link
+              href={`/health-notes?contact_id=${contact.id}`}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 px-3 py-2 text-xs font-semibold text-indigo-400 hover:bg-indigo-500/20 transition-all shadow-sm"
+            >
+              <Stethoscope className="h-3.5 w-3.5" />
+              <span>Start Clinical Note</span>
+            </Link>
           </div>
 
           {/* Phone */}

@@ -56,6 +56,9 @@ export function usePresence(enabled = true): UsePresenceResult {
   const active = enabled && !!accountId;
 
   useEffect(() => {
+    if (typeof document !== "undefined" && document.cookie.includes("wacrm-dev-bypass=true")) {
+      return;
+    }
     if (!active || !accountId) return;
 
     const supabase = createClient();

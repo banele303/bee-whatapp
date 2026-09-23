@@ -1,87 +1,180 @@
-import { useCallback, useState } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { OrbState } from "@/lib/jarvis/types";
 
-interface RealtimeSession {
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  status?: "streaming" | "final" | "interrupted";
+}
+
+export interface RealtimeSession {
   orbState: OrbState;
   active: boolean;
   connecting: boolean;
   error: string | null;
+  messages: ChatMessage[];
   activate: () => Promise<void>;
   deactivate: () => void;
   getLevel: () => number;
-  /** Inject a system note (e.g. "Gmail connected") and have Jarvis respond. */
   notifySystem: (text: string) => void;
-  /** Send a typed text command from the user over the session. */
-  sendUserMessage: (text: string) => void;
+  sendUserMessage: (text: string) => Promise<void>;
+  clearMessages: () => void;
 }
 
+const STORAGE_KEY = "jarvis_chat_messages_v1";
+
 export function useRealtimeSession(): RealtimeSession {
-  const voiceState = useQuery(api.voiceState.get);
-  const [error, setError] = useState<string | null>(null);
+  const [orbState, setOrbState] = useState<OrbState>("idle");
+  const [active, setActive] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const setVoiceState = useMutation(api.voiceState.set);
-  const finalizeMessage = useMutation(api.messages.finalize);
-  const chatAgent = useAction(api.agent.chat);
+  // Hydrate messages from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setMessages(parsed);
+        }
+      }
+    } catch {
+      // ignore parsing errors
+    }
+  }, []);
 
-  const active = voiceState?.sessionActive ?? false;
-  const orbState = (active ? (voiceState?.orbState ?? "idle") : "idle") as OrbState;
+  // Save messages to localStorage on change
+  useEffect(() => {
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [messages]);
 
   const activate = useCallback(async () => {
     setConnecting(true);
     setError(null);
     try {
-      await setVoiceState({ orbState: "idle", sessionActive: true });
+      // Short delay to give a smooth activation feel
+      await new Promise((r) => setTimeout(r, 250));
+      setActive(true);
+      setOrbState("idle");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setConnecting(false);
     }
-  }, [setVoiceState]);
+  }, []);
 
   const deactivate = useCallback(() => {
-    void setVoiceState({ orbState: "idle", sessionActive: false }).catch(() => {});
-  }, [setVoiceState]);
+    setActive(false);
+    setOrbState("idle");
+  }, []);
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const sendUserMessage = useCallback(
     async (text: string) => {
-      if (!text.trim()) return;
-      
-      const userItemId = "user_" + Math.random().toString(36).slice(2, 9);
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      const userMsg: ChatMessage = {
+        id: "msg_user_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        role: "user",
+        text: trimmed,
+        status: "final",
+      };
+
+      const currentHistory = [...messages, userMsg];
+      setMessages(currentHistory);
+      setOrbState("thinking");
+      setError(null);
+
       try {
-        // 1. Immediately insert user's message as finalized so it appears in the chat transcript
-        await finalizeMessage({
-          itemId: userItemId,
-          role: "user",
-          text: text.trim(),
+        const res = await fetch("/api/jarvis/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: trimmed,
+            history: messages.slice(-10).map((m) => ({ role: m.role, content: m.text })),
+          }),
         });
-        
-        // 2. Run the agent chat in the background
-        void chatAgent({ message: text.trim() }).catch((err) => {
-          console.error("Agent chat failed:", err);
-        });
+
+        if (!res.ok) {
+          throw new Error(`Jarvis server responded with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        const assistantText = data.content || "Standing by, sir.";
+
+        setOrbState("speaking");
+
+        const assistantMsg: ChatMessage = {
+          id: "msg_asst_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+          role: "assistant",
+          text: assistantText,
+          status: "final",
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+
+        // Speak for a couple seconds based on response length, then return to idle
+        const speakingDurationMs = Math.min(Math.max(assistantText.length * 15, 1200), 4000);
+        setTimeout(() => {
+          setOrbState("idle");
+        }, speakingDurationMs);
       } catch (err) {
-        console.error("Failed to send message:", err);
+        console.error("Jarvis chat error:", err);
+        setOrbState("idle");
+        const fallbackMsg: ChatMessage = {
+          id: "msg_err_" + Date.now(),
+          role: "assistant",
+          text: "I encountered an issue processing that request. Standing by.",
+          status: "final",
+        };
+        setMessages((prev) => [...prev, fallbackMsg]);
       }
     },
-    [finalizeMessage, chatAgent]
+    [messages]
   );
 
   const notifySystem = useCallback(
-    async (text: string) => {
-      try {
-        void chatAgent({ message: `[System note: ${text}]` }).catch(() => {});
-      } catch (e) {
-        // ignore
-      }
+    (text: string) => {
+      void sendUserMessage(`[System note: ${text}]`);
     },
-    [chatAgent]
+    [sendUserMessage]
   );
 
+  const orbStateRef = useRef(orbState);
+  orbStateRef.current = orbState;
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
   const getLevel = useCallback((): number => {
-    // Audio levels are always 0 because audio/voice is disabled
+    if (!activeRef.current) return 0;
+    if (orbStateRef.current === "speaking") {
+      const t = performance.now() / 1000;
+      return 0.28 + 0.22 * Math.sin(t * 6.5) + 0.12 * Math.sin(t * 14.1);
+    }
+    if (orbStateRef.current === "thinking") {
+      const t = performance.now() / 1000;
+      return 0.1 + 0.08 * Math.sin(t * 3.2);
+    }
     return 0;
   }, []);
 
@@ -90,10 +183,12 @@ export function useRealtimeSession(): RealtimeSession {
     active,
     connecting,
     error,
+    messages,
     activate,
     deactivate,
     getLevel,
     notifySystem,
     sendUserMessage,
+    clearMessages,
   };
 }

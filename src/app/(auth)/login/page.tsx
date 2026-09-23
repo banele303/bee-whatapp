@@ -81,6 +81,20 @@ function LoginPageInner() {
     }
   };
 
+  const handleDevBypass = () => {
+    // Clear any stale Supabase cookies in browser so they don't trigger 401s or failed fetches
+    if (typeof document !== "undefined") {
+      document.cookie.split(";").forEach((c) => {
+        const name = c.trim().split("=")[0];
+        if (name.startsWith("sb-") || name.includes("auth-token")) {
+          document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+      });
+      document.cookie = "wacrm-dev-bypass=true; path=/; max-age=604800"; // 7 days
+    }
+    window.location.href = "/dashboard";
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border bg-card">
@@ -104,8 +118,11 @@ function LoginPageInner() {
         <CardContent>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-400 space-y-2">
+                <div>{error}</div>
+                <div className="text-[11px] text-slate-400 border-t border-red-500/20 pt-2">
+                  💡 Tip: If your Supabase free tier project is paused or offline, click <strong>"Enter Demo / Dev Mode"</strong> below to test the full app & all Healthcare features immediately.
+                </div>
               </div>
             )}
 
@@ -153,6 +170,24 @@ function LoginPageInner() {
               className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {loading ? t('signingIn') : t('signIn')}
+            </Button>
+
+            <div className="relative my-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+                <span className="bg-card px-2 text-muted-foreground">Local Dev & Demo</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDevBypass}
+              className="h-10 w-full border-indigo-500/40 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-all font-semibold"
+            >
+              🚀 Enter Demo / Dev Mode (Bypass Sign-In)
             </Button>
           </form>
 

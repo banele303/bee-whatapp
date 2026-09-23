@@ -16,6 +16,9 @@ export function useUnreadNotifications(): number {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    if (typeof document !== "undefined" && document.cookie.includes("wacrm-dev-bypass=true")) {
+      return;
+    }
     const supabase = createClient();
     let cancelled = false;
 

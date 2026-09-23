@@ -20,6 +20,9 @@ export function useTotalUnread(): number {
   const countsRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
+    if (typeof document !== "undefined" && document.cookie.includes("wacrm-dev-bypass=true")) {
+      return;
+    }
     const supabase = createClient();
     let cancelled = false;
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth } from "@/hooks/use-auth";
 import { api } from "../../../convex/_generated/api";
 import { useRealtimeSession } from "@/hooks/jarvis/useRealtimeSession";
 import { ORB_STATE_HUES, OrbState } from "@/lib/jarvis/types";
@@ -14,22 +14,11 @@ import { RightPanel } from "./panels/RightPanel";
 
 export function JarvisApp() {
   const session = useRealtimeSession();
-  const seed = useMutation(api.init.seed);
-  const syncConnections = useAction(api.composio.syncConnections);
   const checkConnection = useAction(api.composio.checkConnection);
   const clearMessages = useMutation(api.messages.clear);
 
   const voiceState = useQuery(api.voiceState.get);
   const connections = useQuery(api.connections.list) ?? [];
-
-  // Bootstrap singletons + refresh connection statuses once per load.
-  const booted = useRef(false);
-  useEffect(() => {
-    if (booted.current) return;
-    booted.current = true;
-    void seed({}).catch(() => {});
-    void syncConnections({}).catch(() => {});
-  }, [seed, syncConnections]);
 
   // Re-evaluate staleness periodically so dead sessions stop mirroring.
   const [, forceTick] = useState(0);
@@ -47,7 +36,8 @@ export function JarvisApp() {
     setChatInput("");
   };
   const handleClearChat = async () => {
-    await clearMessages({});
+    session.clearMessages();
+    void clearMessages({}).catch(() => {});
     setCleared(true);
     setTimeout(() => setCleared(false), 2000);
   };
@@ -137,9 +127,14 @@ export function JarvisApp() {
                 Session active in another window
               </p>
             )}
-            {session.active && <Transcript onQuickAction={(cmd) => {
-              session.sendUserMessage(cmd);
-            }} />}
+            {session.active && (
+              <Transcript
+                messages={session.messages}
+                onQuickAction={(cmd) => {
+                  void session.sendUserMessage(cmd);
+                }}
+              />
+            )}
             
             {session.active && (
               <form onSubmit={handleSendChat} className="w-full mt-auto pb-4 pt-2 shrink-0">
@@ -201,7 +196,7 @@ function Header({
   mirroring: boolean;
   error: string | null;
 }) {
-  const { signOut } = useAuthActions();
+  const { user: crmUser, signOut } = useAuth();
   const user = useQuery(api.auth.me);
   const profile = useQuery(api.profiles.get);
   return (
@@ -235,12 +230,12 @@ function Header({
                 <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
                 <span className="text-[10px] font-semibold text-primary/70">
-                  {(profile?.displayName ?? user?.email ?? "O")[0]?.toUpperCase()}
+                  {(profile?.displayName ?? crmUser?.email ?? "O")[0]?.toUpperCase()}
                 </span>
               )}
             </span>
             <span className="mono max-w-[160px] truncate text-[11px] text-white/40">
-              {profile?.displayName ?? user?.email ?? "operator"}
+              {profile?.displayName ?? crmUser?.email ?? "operator"}
             </span>
           </span>
           <Link

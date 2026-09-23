@@ -18,11 +18,14 @@ import {
   CheckCircle2,
   ArrowRight,
   ChevronRight,
-  Layers
+  Layers,
+  Hospital,
+  Lock,
+  TrendingUp
 } from 'lucide-react';
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState<'dentist' | 'medspa' | 'autoparts' | 'dealership'>('autoparts');
+  const [activeTab, setActiveTab] = useState<'dentist' | 'medspa' | 'autoparts' | 'dealership' | 'clinic'>('autoparts');
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans antialiased selection:bg-orange-500 selection:text-white">
@@ -51,7 +54,7 @@ export default function LandingPage() {
             Sign In
           </Link>
           <Link
-            href="/onboarding"
+            href="/signup"
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 font-bold text-sm text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] flex items-center gap-2"
           >
             <span>Launch Free Trial</span>
@@ -72,15 +75,15 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
-          Not just WhatsApp CRM — an all-in-one AI platform equipped with Multimodal Vision, Voice Note Transcription, Supplier Web Scout Agents, and Automated Quotes for Dentists, Medspas, Auto Parts & Car Dealerships.
+          Not just WhatsApp CRM — an all-in-one AI platform equipped with Multimodal Vision, Voice Note Transcription, Supplier Web Scout Agents, and Automated Quotes for Specialist Medical Clinics, Dentists, Medspas, Auto Parts &amp; Car Dealerships.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <Link
-            href="/onboarding"
+            href="/signup"
             className="w-full sm:w-auto px-8 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 font-bold text-base text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-105 flex items-center justify-center gap-3"
           >
-            <span>Select Your Industry & Start</span>
+            <span>Start Free Trial</span>
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
@@ -123,7 +126,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white">Multimodal Vision & OCR AI</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Decodes VIN license disc photos, inspects medspa skin images, scans driver's licenses, and reads OEM part numbers.
+                Decodes VIN license disc photos, inspects medspa skin images, parses fertility scan reports &amp; ortho X-ray referrals, scans driver's licenses, and reads OEM part numbers.
               </p>
             </div>
 
@@ -145,7 +148,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white">Smart Calendar & Appt Triage</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                24/7 dental emergency triage, medspa skin consultation slots, and dealership test drive scheduler.
+                24/7 dental emergency triage, specialist clinic multi-doctor booking &amp; waitlists, medspa skin consultation slots, and dealership test drive scheduler.
               </p>
             </div>
 
@@ -223,6 +226,15 @@ export default function LandingPage() {
             <Car className="w-4 h-4" />
             Car Dealerships
           </button>
+          <button
+            onClick={() => setActiveTab('clinic')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+              activeTab === 'clinic' ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
+            }`}
+          >
+            <Hospital className="w-4 h-4" />
+            Specialist Clinics
+          </button>
         </div>
 
         {/* Tab Content Cards */}
@@ -298,6 +310,42 @@ export default function LandingPage() {
               </ul>
             </div>
           )}
+
+          {activeTab === 'clinic' && (
+            <div className="space-y-6">
+              {/* LTV Value Hook Banner */}
+              <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                <div className="flex items-center gap-2 text-rose-300 text-xs font-semibold">
+                  <TrendingUp className="w-4 h-4 text-rose-400" />
+                  Single Procedure Value: <span className="text-white font-black">$5,000 – $50,000+</span>
+                </div>
+                <div className="flex items-center gap-2 text-rose-300 text-xs font-semibold">
+                  <Lock className="w-4 h-4 text-rose-400" />
+                  HIPAA/POPIA-Compliant Encryption
+                </div>
+                <div className="flex items-center gap-2 text-rose-300 text-xs font-semibold">
+                  <Hospital className="w-4 h-4 text-rose-400" />
+                  MDs &amp; Ops Heads on WhatsApp Daily
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 text-rose-400 font-bold text-lg">
+                <Hospital className="w-6 h-6" />
+                ClinicCare AI — Fertility, Orthopedics &amp; MedSpa Command Centre
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                Built for high-ticket specialised clinics where a single patient is worth thousands. Automates patient intake via WhatsApp, syncs to your EHR/EMR stack, surfaces real-time cost estimates, and manages multi-doctor calendars — all from a HIPAA/POPIA-compliant encrypted portal.
+              </p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300 font-medium pt-2">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" /> Encrypted HIPAA/POPIA Patient Portal</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" /> Custom EHR/EMR Sync (per clinic stack)</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" /> Multi-Doctor Calendar &amp; Waitlist Booking</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" /> Interactive Treatment Cost Estimator</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" /> MD &amp; Ops Director WhatsApp Outreach Flows</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" /> Supplier &amp; Consumable Logistics via WhatsApp</li>
+              </ul>
+            </div>
+          )}
         </div>
       </section>
 
@@ -318,7 +366,7 @@ export default function LandingPage() {
             <div className="p-8 rounded-3xl border border-slate-800 bg-slate-900/90 space-y-6 flex flex-col justify-between">
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white">Starter</h3>
-                <p className="text-xs text-slate-400">Ideal for small clinics & single spares shops.</p>
+                <p className="text-xs text-slate-400">Ideal for small clinics, specialist practices &amp; single spares shops.</p>
                 <div className="text-3xl font-extrabold text-white">
                   R 990 <span className="text-sm font-normal text-slate-400">/ month</span>
                 </div>
@@ -329,7 +377,7 @@ export default function LandingPage() {
                 </ul>
               </div>
               <Link
-                href="/onboarding"
+                href="/signup"
                 className="w-full py-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-white font-semibold text-sm text-center block transition-colors"
               >
                 Get Started
@@ -355,7 +403,7 @@ export default function LandingPage() {
                 </ul>
               </div>
               <Link
-                href="/onboarding"
+                href="/signup"
                 className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm text-center block transition-all shadow-lg shadow-orange-500/25"
               >
                 Start 14-Day Free Trial
@@ -366,18 +414,19 @@ export default function LandingPage() {
             <div className="p-8 rounded-3xl border border-slate-800 bg-slate-900/90 space-y-6 flex flex-col justify-between">
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white">Enterprise</h3>
-                <p className="text-xs text-slate-400">For large dealership networks & hospital groups.</p>
+                <p className="text-xs text-slate-400">For large dealership networks, specialist clinic networks &amp; hospital groups.</p>
                 <div className="text-3xl font-extrabold text-white">
                   R 5,990 <span className="text-sm font-normal text-slate-400">/ month</span>
                 </div>
                 <ul className="space-y-3 text-xs text-slate-300 pt-4">
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-orange-500" /> Unlimited WhatsApp Channels</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-orange-500" /> Custom Web Scraping Agents</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-orange-500" /> Dedicated Account Manager & SLA</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-orange-500" /> HIPAA/POPIA-Compliant Patient Portal</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-orange-500" /> Dedicated Account Manager &amp; SLA</li>
                 </ul>
               </div>
               <Link
-                href="/onboarding"
+                href="/signup"
                 className="w-full py-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-white font-semibold text-sm text-center block transition-colors"
               >
                 Contact Enterprise Sales
@@ -389,7 +438,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-12 px-6 lg:px-12 text-center text-xs text-slate-500">
-        <p>© 2026 WACRM AI SaaS Platform. Built for Dentists, Medspas, Auto Parts & Car Dealerships.</p>
+        <p>© 2026 WACRM AI SaaS Platform. Built for Specialist Medical Clinics, Dentists, Medspas, Auto Parts &amp; Car Dealerships.</p>
       </footer>
     </div>
   );

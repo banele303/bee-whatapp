@@ -97,8 +97,23 @@ function MarkdownMessage({ text }: { text: string }) {
 /* Main Transcript                                                     */
 /* ------------------------------------------------------------------ */
 
-export function Transcript({ onQuickAction }: { onQuickAction?: (cmd: string) => void }) {
-  const messages = useQuery(api.messages.list) ?? [];
+export interface TranscriptMessage {
+  id?: string;
+  _id?: string;
+  role: "user" | "assistant";
+  text: string;
+  status?: string;
+}
+
+export function Transcript({
+  messages: externalMessages,
+  onQuickAction,
+}: {
+  messages?: TranscriptMessage[];
+  onQuickAction?: (cmd: string) => void;
+}) {
+  const convexMessages = useQuery(api.messages.list) ?? [];
+  const messages = externalMessages && externalMessages.length > 0 ? externalMessages : convexMessages;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,9 +145,9 @@ export function Transcript({ onQuickAction }: { onQuickAction?: (cmd: string) =>
         )}
 
         <AnimatePresence initial={false}>
-          {messages.map((m) => (
+          {messages.map((m: any, idx: number) => (
             <motion.div
-              key={m._id}
+              key={m.id ?? m._id ?? `msg_${idx}`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, ease: "easeOut" }}
